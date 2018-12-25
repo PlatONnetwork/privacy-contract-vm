@@ -1,0 +1,1 @@
+clang++ -g testjit.cpp -I/root/workspace/mpc/MPC_native_llvm/src/mpc-vm-core -I/root/workspace/mpc/MPC_native_llvm/src/mpc-vm-core/include -I/root/workspace/mpc/MPC_native_llvm/third-code/miracl-old/include -I./ -maes -mrdseed -msse4 -L/root/workspace/mpc/MPC_native_llvm/build/lib -L/usr/local/lib -L./ -ljuzixmpcvm_core -lprotobuf -lprotobuf-lite -ljuzix-jit

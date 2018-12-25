@@ -1,0 +1,27 @@
+[submodule "third-code/protobuf"]
+	path = third-code/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git
+[submodule "third-code/cryptopp"]
+	path = third-code/cryptopp
+	url = https://github.com/weidai11/cryptopp.git
+[submodule "third-code/gtest"]
+	path = third-code/gtest
+	url = https://github.com/google/googletest.git
+[submodule "third-code/gflags"]
+	path = third-code/gflags
+	url = https://github.com/gflags/gflags.git
+[submodule "third-code/libscrypt"]
+	path = third-code/libscrypt
+	url = https://github.com/technion/libscrypt.git
+[submodule "third-code/relic"]
+	path = third-code/relic
+	url = https://github.com/relic-toolkit/relic.git
+[submodule "third-code/emp-tool"]
+	path = third-code/emp-tool
+	url = https://github.com/kelvinskk/emp-tool.git
+[submodule "third-code/emp-ot"]
+	path = third-code/emp-ot
+	url = https://github.com/kelvinskk/emp-ot.git
+[submodule "third-code/emp-sh2pc"]
+	path = third-code/emp-sh2pc
+	url = https://github.com/kelvinskk/emp-sh2pc.git

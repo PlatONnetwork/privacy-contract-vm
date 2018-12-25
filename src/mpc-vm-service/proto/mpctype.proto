@@ -1,0 +1,13 @@
+
+syntax = "proto3";
+
+package mpctype;
+option java_package = "net.platon.vm.proto";
+
+message MPCInteger32 {
+    int32 i32 = 1;
+}
+
+message MPCFloat {
+    float f = 1;
+}

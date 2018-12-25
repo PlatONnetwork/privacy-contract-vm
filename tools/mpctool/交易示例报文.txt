@@ -1,0 +1,16 @@
+// 此报文为针对 ListMst 的，可以直接使用，使用前替换合约地址即可.
+
+{
+	"jsonrpc": "2.0",
+	"method": "eth_sendTransaction",
+	"params": [{
+			"from": "0x60ceca9c1290ee56b98d4e160ef0453f7c40d219",
+			"to": "0x013691780c182303fcdfd02ada462464d1a3a06c",
+			"gas": "0x166709",
+			"gasPrice":"0x8250de00",
+			"value": "0x9184e72a",
+			"data": "0xdb880000000000000005874c6973744d736789657874726164617461"
+		}
+	],
+	"id": 1
+}
