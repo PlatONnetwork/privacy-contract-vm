@@ -1,0 +1,16 @@
+
+syntax = "proto3";
+
+package demo;
+option java_package = "abc.def.demo";
+
+message Foo {
+    int32        i32     = 1;
+    float        f       = 2;
+}
+
+message Bar {
+    Foo          foo     = 1;
+    int32        i32     = 2;
+    float        f       = 3;
+}

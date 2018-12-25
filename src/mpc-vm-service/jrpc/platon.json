@@ -1,0 +1,35 @@
+[
+  {
+    "name": "eth_call",
+    "params": [
+      {},
+      ""
+    ],
+    "order": [],
+    "returns": ""
+  },
+  {
+    "name": "eth_getTransactionCount",
+    "params": [ "", "" ],
+    "order": [],
+    "returns": ""
+  },
+  {
+    "name": "eth_sendRawTransaction",
+    "params": [ "" ],
+    "order": [],
+    "returns": ""
+  },
+  {
+    "name": "eth_getTransactionReceipt",
+    "params": [ "" ],
+    "order": [],
+    "returns": {}
+  },
+  {
+    "name": "eth_setActor",
+    "params": [ "" ],
+    "order": [],
+    "returns": ""
+  }
+]

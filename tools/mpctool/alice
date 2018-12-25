@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./xxxx1 --url 192.168.9.14:6379 --flag alice

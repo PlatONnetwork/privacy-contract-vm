@@ -1,0 +1,23 @@
+#pragma once
+
+/*
+Default configuration for service.
+*/
+
+#define mpcc_cpp_abi_json_filepath  (const char*)"@MPCC_CPP_ABI_JSON_FILEDIR@/mpcc.cpp.abi.json"
+
+
+#define lib_mpc_vm_core_path        (const char*)"libmpc_vm_core.so"
+#ifdef DEBUG
+#define lib_protobuf_path           (const char*)"libprotobufd.so"
+#define lib_protobuf_lite_path      (const char*)"libprotobuf-lited.so"
+#else
+#define lib_protobuf_path           (const char*)"libprotobuf.so"
+#define lib_protobuf_lite_path      (const char*)"libprotobuf-lite.so"
+#endif
+
+#ifdef _WIN32
+#define ir_data_cache_dir			(const char*)"data/ir/"
+#else
+#define ir_data_cache_dir			(const char*)"data/ir/"
+#endif

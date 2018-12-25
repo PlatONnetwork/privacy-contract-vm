@@ -1,0 +1,49 @@
+#include "io_channel.h"
+#include "emp-tool/io/net_io_channel.h"
+#include "emp-tool/utils/utils.h"
+
+#include <iostream>
+using namespace std;
+using namespace platon::mpc;
+
+int main(int argc, char** argv) 
+{
+	int port, party;
+	parse_party_and_port(argv, 2, &party, &port);
+	NetIO * io = new NetIO(party == ALICE ? nullptr:"127.0.0.1", port);
+
+	if(party == ALICE) 
+	{
+		for (long long length = 2; length <= 8192*16; length*=2) 
+		{
+			long long times = 1024*1024*128/length;
+			block * data = new block[length];
+			auto start = clock_start();
+			for (int i = 0; i < times; ++i) 
+			{
+				io->send_block(data, length);
+			}
+			double interval = time_from(start);
+			delete[] data;
+			cout << "Loopback speed with block size "<<length<<" :\t send: "<<(length*times*128)/(interval+0.0)*1e6*1e-9<<" Gbps\n";
+		}
+	} 
+	else 
+	{//party == BOB
+		for (long long length = 2; length <= 8192*16; length*=2) 
+		{
+			long long times = 1024*1024*128/length;
+			block * data = new block[length];
+			auto start = clock_start();
+			for (int i = 0; i < times; ++i) {
+				io->recv_block(data, length);
+			}
+			double interval = time_from(start);
+			delete[] data;
+
+			cout << "Loopback speed with block size " << length << " :\t recv; " << (length*times * 128) / (interval + 0.0)*1e6*1e-9 << " Gbps\n";
+		}
+	}
+	delete io;
+}
+
