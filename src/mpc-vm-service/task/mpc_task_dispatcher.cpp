@@ -155,12 +155,6 @@ void MpcTaskDispatcher::putFirstInputBuffer(const string& taskId, MpcBufferPtr b
 
 	m_firstInputBufferMap.insert(taskId, buffers);
 }
-/*
-**
-**
-**
-**
-*/
 
 
 int MpcTaskDispatcher::findTaskState(const std::string& taskid, int& state)
@@ -249,7 +243,7 @@ int MpcTaskDispatcher::popCommitTask(MPCTask& task)
 		return -1;
 	}
 
-	LOGI("to POP a commit task, task size: %d  ...", m_atomicCommitNum.load(std::memory_order_relaxed));
+	//LOGI("to POP a commit task, task size: %d  ...", m_atomicCommitNum.load(std::memory_order_relaxed));
 	int ret = m_commitQueue.pop(task, 1000);
 	if (0 != ret){
         if(ret == -2){/*timeout*/ }

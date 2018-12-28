@@ -30,10 +30,7 @@ int MpcP2pTaskReadyProcessor::init(int _queSize)
     thread_ = new std::thread([&](MpcP2pTaskReadyProcessor* processor) {
         while (processor->running())
         {
-            if (0 != processor->processReadyTask())
-            {
-                //LOGW("ready process a commit busi task failed !");
-            }
+			processor->processReadyTask();
         }
 
         LOGW("the ready processor exited !");
@@ -86,7 +83,7 @@ int MpcP2pTaskReadyProcessor::removeRequest(const string& taskId)
         request_full_cond_.notify_one();//may notify_all
     }
 
-    LOGI("remove the request done, task: %s", taskId.data());
+    LOGI("remove a working request, task: %s", taskId.data());
     return 0;
 }
 
@@ -110,8 +107,7 @@ int MpcP2pTaskReadyProcessor::processReadyTask()
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         return -1;
     }
-    LOGI("###  ready processing,  register address: %s ### ", address.data());
-
+    
     //// 1. update the commited and not ready tasks, check if timeout
     std::vector<MPCTask> tasks;
     //dispacher->GetTimeoutTasks(tasks);
@@ -125,18 +121,21 @@ int MpcP2pTaskReadyProcessor::processReadyTask()
             int task_type = (task.invitor) ? 0 : 1;
             int state = 0;
             int ret = dispacher->findTaskState(task.taskId, state);
-            LOGI("###===> the task:%s task_type: %d findTaskState ret: %d state: %d already: %s",
-                task.taskId.data(), task_type, ret, state, (task.already ? "true" : "false"));
-
-            // check if timeout (should not enter here if in normal sutiation)
-            if (task.timeout() && !task.already) {
-                LOGW("###===> the task:%s timeout!", task.taskId.data());
-                request_queue_.erase(iter++);
+            if(ret != 0)
+            {
+                LOGW("cannot find the task state, peers not communication, task:%s task_type: %d", task.taskId.data(), task_type);
                 continue;
             }
 
+            // check if timeout (should not enter here if in normal sutiation)
+            // if (task.timeout() && !task.already) {
+            //     LOGW("###===> the task:%s timeout!", task.taskId.data());
+            //     request_queue_.erase(iter++);
+            //     continue;
+            // }
+
             if (ret == 0 && ((state & 0x03) == 0x03)) {
-                LOGI("###===> the task:%s all ready, put to ready queue !", task.taskId.data());
+                LOGI("put a task: %s to ready queue !", task.taskId.data());
                 task.status = MPCTask::Status::PUSH_READY;
                 task.already = true;
                 dispacher->putReadyTask(task, task_type);
@@ -156,7 +155,6 @@ int MpcP2pTaskReadyProcessor::processReadyTask()
             running_ = false;
         }
 
-        //LOGW("cannot pop commit task, break by outside !");
         return -1;
     }
     task.timer.start(); // total timeout (from commit to ... end)
