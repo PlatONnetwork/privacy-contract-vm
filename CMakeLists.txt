@@ -44,7 +44,8 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 SET(THIRD_CODE_DIR ${CMAKE_SOURCE_DIR}/third-code)
 SET(WIN_THIRD_COMPILED_DIR ${THIRD_CODE_DIR}/z-windows-compiled)
 SET(LINUX_THIRD_COMPILED_DIR ${THIRD_CODE_DIR}/z-linux-compiled)
-SET(BOOST_INCLUDE ${THIRD_CODE_DIR}/boost_1_66_0)
+SET(BOOST_INCLUDE ${BOOST_INCLUDEDIR})
+message(STATUS "boost include: ${BOOST_INCLUDEDIR}")
 
 # find packages
 find_package(Git)
@@ -58,8 +59,9 @@ MESSAGE(STATUS "OpenSSL_FOUND: ${OpenSSL_FOUND}")
 MESSAGE(STATUS "ZLIB_FOUND: ${ZLIB_FOUND}")
 MESSAGE(STATUS "Protobuf_FOUND: ${Protobuf_FOUND}")
 
-IF(Boost_FOUND)
+IF(NOT Boost_FOUND)
     SET(BOOST_INCLUDE ${BOOST_INCLUDEDIR})
+    SET(Boost_INCLUDE_DIR ${BOOST_INCLUDE})
 ENDIF()
 ADD_DEFINITIONS(-DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 include_directories(${BOOST_INCLUDE})
@@ -160,14 +162,9 @@ IF(OT_NP_USE_MIRACL)
 ELSEIF(WIN32 AND NOT OT_NP_USE_MIRACL)
     add_subdirectory(third-code/relic-win)
 ELSEIF(UNIX AND NOT OT_NP_USE_MIRACL)
-    add_subdirectory(third-code/relic)
+    #add_subdirectory(third-code/relic)
 ENDIF()
 
-
-## add emp-toolkit submodules
-add_subdirectory(third-code/emp-tool)
-add_subdirectory(third-code/emp-ot)
-add_subdirectory(third-code/emp-sh2pc)
 
 # 
 # third-code projects
@@ -178,8 +175,15 @@ SET(gtest_force_shared_crt ON)
 add_subdirectory(third-code/gtest)
 
 option(protobuf_BUILD_TESTS "Build tests" OFF)
-option(protobuf_BUILD_SHARED_LIBS "Build tests" ON)
+#option(protobuf_BUILD_SHARED_LIBS "Build tests" OFF)
+SET(protobuf_MSVC_STATIC_RUNTIME OFF)
+SET(protobuf_BUILD_SHARED_LIBS OFF)
 add_subdirectory(third-code/protobuf/cmake)
+
+## add emp-toolkit submodules
+add_subdirectory(third-code/emp-tool)
+add_subdirectory(third-code/emp-ot)
+add_subdirectory(third-code/emp-sh2pc)
 
 
 IF(ENABLE_ENCRYPT)

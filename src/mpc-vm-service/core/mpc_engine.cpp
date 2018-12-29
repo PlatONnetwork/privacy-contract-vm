@@ -179,8 +179,7 @@ int MpcEngine::init(
         LOGI("init step: %2d INIT PlatON JIT", step++);
         std::vector<std::string> libs{
             lib_mpc_vm_core_path,
-            lib_protobuf_path,
-            lib_protobuf_lite_path
+            lib_protobuf_path
         };
         for (auto&lib : libs) {
             LOGI("INIT PlatON JIT lib: %s", lib.c_str());

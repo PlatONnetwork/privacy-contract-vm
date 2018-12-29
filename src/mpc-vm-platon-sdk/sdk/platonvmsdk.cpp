@@ -31,16 +31,19 @@ extern "C" {
 
 		VMClient* client = VMClient::getInstance();
 		if (!client->Inited()) {
+            LOGI("init vm client, cfg: %s...", icecfg);
 			InitPara para;
 			{
 				para.icecfg = std::string(icecfg);
 				para.url = std::string(url);
 			}
 			if (!client->init(para)) {
+                LOGW("init the vm client failed.");
 				return ERR_INIT_ENGINE;
 			}
 		}
 
+        LOGW("init the vm client ok.");
 		return ERR_NO_ERROR;
 	}
 
@@ -61,6 +64,7 @@ extern "C" {
 
 		VMClient* client = VMClient::getInstance();
 		if (!client->Inited()) {
+            LOGW("vm client is not init");
 			return ERR_NOT_INIT;
 		}
 
@@ -74,9 +78,11 @@ extern "C" {
 			para.extras = std::string(extras);
 		}
 		if (!client->commit(para)) {
+            LOGW("vm client commit failed");
 			return ERR_COMMIT_TASK;
 		}
 
+        LOGI("commit a task: %s to mpc vm", taskid);
 		return ERR_NO_ERROR;
 	}
 

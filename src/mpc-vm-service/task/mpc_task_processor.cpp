@@ -248,7 +248,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         }
     }
 
-   emp::IOChannel *ioChannel = nullptr;
+	CommunicatorIOChannel *ioChannel = nullptr;
     {
         LOGI("process step:%02d set an io channel to mpc.", step++);
         ioChannel = new CommunicatorIOChannel(this);
