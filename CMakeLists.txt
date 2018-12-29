@@ -162,7 +162,7 @@ IF(OT_NP_USE_MIRACL)
 ELSEIF(WIN32 AND NOT OT_NP_USE_MIRACL)
     add_subdirectory(third-code/relic-win)
 ELSEIF(UNIX AND NOT OT_NP_USE_MIRACL)
-    add_subdirectory(third-code/relic)
+    #add_subdirectory(third-code/relic)
 ENDIF()
 
 
