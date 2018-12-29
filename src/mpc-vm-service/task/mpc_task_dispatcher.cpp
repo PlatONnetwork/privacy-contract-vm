@@ -156,7 +156,6 @@ void MpcTaskDispatcher::putFirstInputBuffer(const string& taskId, MpcBufferPtr b
 	m_firstInputBufferMap.insert(taskId, buffers);
 }
 
-
 int MpcTaskDispatcher::findTaskState(const std::string& taskid, int& state)
 {
 	return m_taskState.getElem(taskid, state);

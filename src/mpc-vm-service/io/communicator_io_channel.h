@@ -19,7 +19,6 @@ public:
 	CommunicatorIOChannel(MpcTaskProcessor* processor);
 	virtual ~CommunicatorIOChannel();
 
-private:
 	int send_data(const void * data, int len) override;
 	int recv_data(void  * data, int len) override;
 

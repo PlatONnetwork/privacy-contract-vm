@@ -6,9 +6,9 @@
 #include <thread>
 
 
-#ifndef WIN32
+//#ifndef WIN32
 #include "jit.h"
-#endif//
+//#endif//
 
 //#include "miracl.h"
 
@@ -109,8 +109,11 @@ int main(int argc, char** argv)
 {
 	int port, party;
 	parse_party_and_port(argv, &party, &port);
-
+#ifndef _WIN32
 	std::vector<std::string> libs{ "../lib/libemp-tool.so", "../lib/libprotobufd.so"};
+#else
+	std::vector<std::string> libs{ "./emp-tool.dll", "./libprotobufd.dll" };
+#endif
 	if (!PlatON_InitJIT(libs))
 	{
 		printf("PlatON_RunFuncByLazyJIT failed !\n");

@@ -67,6 +67,8 @@ static constexpr char hexmap[] = { '0', '1', '2', '3', '4', '5', '6', '7', \
 
 template<typename T>
 std::string ToHexString(T* bin, int count) noexcept {
+    if (bin == nullptr || count <= 0)
+        return "";
 	std::string hex(count * sizeof(T) * 2, ' ');
 	unsigned char* byte = static_cast<unsigned char*>(bin);
 	for (int i = 0; i < count * sizeof(T); ++i)

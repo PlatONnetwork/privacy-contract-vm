@@ -49,7 +49,7 @@ message("the src dir: ${SRC_LIST}" ${ICE_ROOT})
 
 link_directories(${CMAKE_BINARY_DIR}/lib ${ICE_ROOT}/lib)
 
-if(NOT OT_NP_USE_MIRACL)
+if(OT_NP_USE_MIRACL)
 	link_libraries(miracl)
 endif()
 

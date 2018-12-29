@@ -66,12 +66,11 @@ int MpcP2pTaskReadyProcessor::removeRequest(const string& taskId)
         return -1;
     }
 
-    //remove the request task
     {
         LOGD("to remove the request task: %s ...", taskId.data());
         std::unique_lock<std::mutex> lock(request_mutex_);
         request_empty_cond_.wait(lock, [&]() {
-            return !request_queue_.empty() || !running_;//wait (!pred()) wait()
+            return !request_queue_.empty() || !running_;
         });
         if (!running_)
         {
@@ -86,7 +85,6 @@ int MpcP2pTaskReadyProcessor::removeRequest(const string& taskId)
     LOGI("remove a working request, task: %s", taskId.data());
     return 0;
 }
-
 
 int MpcP2pTaskReadyProcessor::processReadyTask()
 {
@@ -112,7 +110,7 @@ int MpcP2pTaskReadyProcessor::processReadyTask()
     std::vector<MPCTask> tasks;
     //dispacher->GetTimeoutTasks(tasks);
 
-    //2. firstly, if the task state is not less than 2, put to ready queue
+    //2. get ready and commit to ready queue
     {
         std::unique_lock<std::mutex> lock(request_mutex_);
         tasks.clear();
@@ -157,7 +155,7 @@ int MpcP2pTaskReadyProcessor::processReadyTask()
 
         return -1;
     }
-    task.timer.start(); // total timeout (from commit to ... end)
+    task.timer.start();
     tasks.push_back(task);
 
     LOGI("got commit tasks count: %d, to request busi, now request num: %d", tasks.size(), request_queue_.size());
