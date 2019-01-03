@@ -13,3 +13,12 @@
 [submodule "third-code/relic"]
 	path = third-code/relic
 	url = https://github.com/relic-toolkit/relic.git
+[submodule "third-code/emp-tool"]
+	path = third-code/emp-tool
+	url = https://github.com/kelvinskk/emp-tool.git
+[submodule "third-code/emp-ot"]
+	path = third-code/emp-ot
+	url = https://github.com/kelvinskk/emp-ot.git
+[submodule "third-code/emp-sh2pc"]
+	path = third-code/emp-sh2pc
+	url = https://github.com/kelvinskk/emp-sh2pc.git
