@@ -48,9 +48,15 @@ Here are the detail commands:
     ```
 
   - instlall the platon mpc core
-    ```
+    ```bash
+    # clone repository:
+    > git clone https://github.com/PlatONnetwork/privacy-contract-vm.git --recursive
+    > git submodule update --recursive --remote
+    # compile
+    > cd private-contract-vm
     > mkdir build
     > cd build
+    # -DOPENSSL_ROOT_DIR=/path/to/openssl -DBOOST_INCLUDEDIR=/path/to/boost/include is required on Windows
     > cmake .. -DOPENSSL_ROOT_DIR=/path/to/openssl -DBOOST_INCLUDEDIR=/path/to/boost/include
     > make
     > sudo make install
