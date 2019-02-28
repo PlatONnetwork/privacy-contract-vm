@@ -53,7 +53,7 @@ int MpcDirectNodeCommunicator::init()
 
 	////////////////////////////////////
 	{
-		std::string endpoint_cb = "default -h localhost";
+		std::string endpoint_cb = "default -h 0.0.0.0";
 		LOGI("to create object adapter for callback: %s ....", endpoint_cb.data());
 		Ice::ObjectAdapterPtr adapter = m_communicator->createObjectAdapterWithEndpoints("x", endpoint_cb); //m_communicator->createObjectAdapterWith("NodeCallback.Client");
 		m_nodecallbackImpl = new MpcNodeCallbackImpl;
@@ -104,12 +104,12 @@ void MpcDirectNodeCommunicator::ready(const ::platon::service::TaskParams& param
 
 
 int MpcDirectNodeCommunicator::notify(const ::platon::service::TaskParams& params) {
-	LOGD("#### client notify2, task: %s ...", params.taskid.data());
+	LOGI("#### client notify2, task: %s ...", params.taskid.data());
 	return m_sessionPrx->notify2(params);
 }
 
 int MpcDirectNodeCommunicator::invite(const ::platon::service::TaskParams& params) {
-	LOGD("#### client invite2, task: %s ...", params.taskid.data());
+	LOGI("#### client invite2, task: %s ...", params.taskid.data());
 	return m_sessionPrx->invite2(params);
 }
 NS_PLATON_SDK_MPC_END

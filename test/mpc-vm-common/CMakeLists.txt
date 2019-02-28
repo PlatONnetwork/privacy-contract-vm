@@ -6,20 +6,13 @@ set(CUR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 GenOrganizedTree("" ${CUR_DIR} *.*)
 
-if(WIN32)
-	link_directories(${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE})
-	#link_libraries(Ws2_32)
-else()
-	link_directories(${CMAKE_BINARY_DIR}/lib)
-endif()
-
 
 include_directories(${THIRD_CODE_DIR}/gtest/googletest/include)
 
-IF(OpenSSL_FOUND)
-	include_directories(${OPENSSL_INCLUDE_DIR})
-	link_libraries(${OPENSSL_LIBRARIES})
-ENDIF()
+# openssl for relic
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+link_libraries(${OPENSSL_LIBRARIES})
 
 set(MPC_VM_COMMON_DIR ${CMAKE_SOURCE_DIR}/src/mpc-vm-common)
 include_directories(${MPC_VM_COMMON_DIR}/include)

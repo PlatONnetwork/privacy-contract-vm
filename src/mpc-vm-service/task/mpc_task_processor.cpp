@@ -19,19 +19,6 @@ using namespace platon::mpc;
 
 
 #include "jit.h"
-#ifdef _WIN32
-int MyPlatON_RunFuncByLazyJIT(const char *pModuleName, const char *pFuncName,
-    char **pRetBuf, char **argv, unsigned*unit_arg_len) {
-    LOGI("windows not supported at present!");
-
-    *pRetBuf = (char*)malloc(1);
-    **pRetBuf = 1;
-
-    return 1;
-}
-#else
-#define MyPlatON_RunFuncByLazyJIT PlatON_RunFuncByLazyJIT
-#endif
 
 NS_PLATON_SDK_MPC_BEG
 
@@ -162,10 +149,12 @@ int MpcTaskProcessor::processTask()
     //start a mpc busi task (with a timer)
     LOGI("processor-%d (type: %d) to process a MPC task: %s ...", m_id, m_type, m_task.taskId.data());
 
+    platon::mpc::SimpleTimer timer;
     LOGI("PROCESS TASK BEG:\n%s\n", m_task.toString().c_str());
     ret = processMpcBusi(m_task);
+    m_task.elapse = timer.elapse();
     LOGI("PROCESS TASK END:\n%s\n", m_task.toString().c_str());
-
+    
     if (0 != ret) {
         LOGW("processor a MPC task: %s Failed !", m_task.taskId.data());
         if (!m_task.invitor) {
@@ -178,10 +167,11 @@ int MpcTaskProcessor::processTask()
     }
 
     // pop commit task
-    auto taskDispatcher = MpcEngine::getInstance()->getTaskDispatcher();
-    taskDispatcher->removeTaskState(m_task.taskId);
-    auto  taskReadyProcessor = MpcEngine::getInstance()->getTaskReadyProcessor();
-    taskReadyProcessor->removeRequest(m_task.taskId);
+	LOGI("processor task: %s done, clear cache resources", m_task.taskId.data());
+	auto disp = MpcEngine::getInstance()->getTaskDispatcher();
+	disp->removeTaskState(m_task.taskId);
+	disp->removeRequest(m_task.taskId);
+	disp->removeWorkingTask(m_task.taskId);
 
     return ret;
 }
@@ -228,7 +218,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         LOGI("process step:%02d get input data by call data-provider inputData-callback-function.\n", step++);
         try {
             ::platon::ErrorEnum error = task.taskCB->inputData(request, in, in_x);
-            if ((in.size() == 0) /*|| (in_x.size() == 0)*/ || (error != ::platon::ErrorEnum::NoError)) {
+            if (false /*(in.size() == 0) || (in_x.size() == 0)*/ || (error != ::platon::ErrorEnum::NoError)) {
                 LOGE("get input data, in size:%d, in_x size:%d, error:%d", in.size(), in_x.size(), static_cast<int>(error));
                 return -1;
             }
@@ -248,7 +238,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         }
     }
 
-	CommunicatorIOChannel *ioChannel = nullptr;
+    CommunicatorIOChannel *ioChannel = nullptr;
     {
         LOGI("process step:%02d set an io channel to mpc.", step++);
         ioChannel = new CommunicatorIOChannel(this);
@@ -296,7 +286,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         }
 
         LOGI("------> mpc run PlatON_RunFuncByLazyJIT   ... task: %s, user: %s, role: %s", task.taskId.data(), user_address.data(), (request.role == ::platon::MPCRole::PART_ALICE ? "ALICE" : "BOB"));
-        int result_len = MyPlatON_RunFuncByLazyJIT(ir_full_name.c_str(), ir_func_name.c_str(), &result, (char**)inputs, lengths);
+        int result_len = PlatON_RunFuncByLazyJIT(ir_full_name.c_str(), ir_func_name.c_str(), &result, (char**)inputs, lengths);
 
         delete ioChannel;
         delete[] buf;
@@ -304,7 +294,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
 
         if (result_len <= 0) {
             LOGE("call PlatON_RunFuncByLazyJIT, jit run failed, result_len %d.", result_len);
-            free(result);
+            PlatON_RunFuncByLazyJIT(ir_full_name.c_str(), "free", (char **)result, nullptr, nullptr);
             return -1;
         }
         LOGI("call PlatON_RunFuncByLazyJIT, result[len:%d]:%s", result_len, ToHexString((unsigned char*)result, result_len).c_str());
@@ -312,13 +302,18 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         if (request.role == ::platon::MPCRole::PART_ALICE) {
             task.status = MPCTask::Status::PROCESS_OK;
             LOGI("ALICE return.");
-            free(result);
+            PlatON_RunFuncByLazyJIT(ir_full_name.c_str(), "free", (char **)result, nullptr, nullptr);
             return 0;
         }
 
         buftovec(out, (const unsigned char*)result, result_len);
-        free(result);
+        PlatON_RunFuncByLazyJIT(ir_full_name.c_str(), "free", (char **)result, nullptr, nullptr);
         LOGI("BOB go on.");
+
+#if defined(RUN_WITHOUT_PLATON)
+        task.status = MPCTask::Status::PROCESS_OK;
+        return 0;
+#endif
     }
     {
         task.status = MPCTask::Status::PROCESS_NOTIFY_RESULT;
@@ -356,8 +351,8 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         olen = vectobuf(out, outbuf);
 #endif
         {
-#define DEBUG_TEST // note: this test section only for show how to use sdk to decrypt encrypt-result
-#if defined(ENABLE_ENCRYPT) && defined(DEBUG_TEST)
+            // note: this test section only for show how to use sdk to decrypt encrypt-result
+#if defined(ENABLE_ENCRYPT) && (defined(_DEBUG) || defined(DEBUG))
             dev::Public k("f5174b29d3ec35ece4752eeefaeb8aa1b875c3f1884ea8d84cce10422248d87dfbac11489232cba8623c2bb586ee4ccff4753c46bae5d64c37e6ece99273e384");
             std::vector<byte> bytes;
 
@@ -381,14 +376,17 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
             std::string dec_s = ToHexString(outbuf2, olen2);
             LOGI("task: %s dec_s %s", task.taskId.c_str(), dec_s.c_str());
 #endif // for debug test
-#undef DEBUG_TEST
         }
     }
+
+    // use stack client instead of global
+    //PlatonClient& platonClient = *MpcEngine::getInstance()->getPlatonClient();
+    PlatonClient platonClient(MpcEngine::getInstance()->getPlatonUrl());
+
     long nonce = 0L;
     {
         long tx_count = 0L;
-        auto platonClient = MpcEngine::getInstance()->getPlatonClient();
-        std::string s_count = platonClient->getTransactionCount(user_address, "pending");
+        std::string s_count = platonClient.getTransactionCount(user_address, "pending");
         LOGI("process s_count:%s\n", s_count.c_str());
         MPC_IGNORE_EXCEPTIONS(tx_count = std::stol(s_count, nullptr, 0));
         long oldnonce = 0;
@@ -434,8 +432,7 @@ int MpcTaskProcessor::processMpcBusi(MPCTask& task)
         LOGI("process step:%02d send encrypted-signed-transaction to platon node.\n", step++);
         string params(sign_data);
 
-        auto platonClient = MpcEngine::getInstance()->getPlatonClient();
-        string transhash = platonClient->sendRawTransaction(params);
+        string transhash = platonClient.sendRawTransaction(params);
         if (transhash == "") {
             LOGE("sendRawTransaction failed");
             return -1;

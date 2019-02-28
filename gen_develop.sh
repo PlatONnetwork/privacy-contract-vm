@@ -11,8 +11,11 @@ sudo apt install gcc g++ cmake git zlib1g-dev libssl-dev bzip2 libexpat1-dev lib
 
 sudo apt-get install autoconf automake libtool unzip tree
 
+##### On CentOS 7.4 #####
+sudo yum install wget gcc bzip2 vim cmake git zlib-devel openssl-devel expat-devel libdb-cxx-devel gmp-devel libcurl-devel boost-devel libcurl-devel.x86_64
 
 
+        
 # Ice:3.6.4
 mkdir deps
 

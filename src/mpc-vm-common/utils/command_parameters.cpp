@@ -204,3 +204,11 @@ void help_mpc_sdk_test() {
 		<< std::endl;
 	std::cout << sss.str();
 }
+void help_mpc_vm_sdk_test() {
+    std::stringstream sss;
+    sss << std::endl << "  -iceConfigFile     " << "ice config file (must)"
+        << std::endl << "  -alg               " << "method (must)"
+        << std::endl << "  -testCount         " << "test count"
+        << std::endl;
+    std::cout << sss.str();
+}

@@ -108,7 +108,7 @@ int MpcTaskDispatcher::putBuffer(const string& taskId, MpcBufferPtr buffer)
 		string proccessTask = m_mpcProcessors[i]->getTaskId();
 		if (taskId == proccessTask)
 		{
-			LOGI("to put a buffer(size: %d, seq: %d) with task: %s, to processor: %d Ok!", buffer->length, buffer->seq, taskId.data(), i);
+			//LOGI("to put a buffer(size: %d, seq: %d) with task: %s, to processor: %d Ok!", buffer->length, buffer->seq, taskId.data(), i);
 			m_mpcProcessors[i]->inputBuffer(buffer);
 			return 0;
 		}
@@ -118,7 +118,7 @@ int MpcTaskDispatcher::putBuffer(const string& taskId, MpcBufferPtr buffer)
 	//put the buffer to first buffer queue
 	{
 		putFirstInputBuffer(taskId, buffer);
-		LOGW("cannot find the working process, put a buffer(%d size) with task: %s to first input buffer", buffer->length, taskId.data());
+		//LOGW("cannot find the working process, put a buffer(%d size) with task: %s to first input buffer", buffer->length, taskId.data());
 	}
 	
 	return 0;
@@ -158,17 +158,30 @@ void MpcTaskDispatcher::putFirstInputBuffer(const string& taskId, MpcBufferPtr b
 
 int MpcTaskDispatcher::findTaskState(const std::string& taskid, int& state)
 {
-	return m_taskState.getElem(taskid, state);
+	std::lock_guard<std::recursive_mutex> lock(m_stateMutex);
+	auto item = m_taskState.find(taskid);
+	if (item == m_taskState.end())
+		return -1;
+
+	state = item->second;
+	return 0;
 }
 
 int MpcTaskDispatcher::removeTaskState(const std::string& taskid)
 {
-	return m_taskState.erase(taskid);
+	std::lock_guard<std::recursive_mutex> lock(m_stateMutex);
+	m_taskState.erase(taskid);
+	return 0;
 }
 
 void MpcTaskDispatcher::updateTaskState(const std::string& taskid, const int& state)
 {
-	m_taskState.insert(taskid, state);
+	std::lock_guard<std::recursive_mutex> lock(m_stateMutex);
+	auto item = m_taskState.find(taskid);
+	if (item == m_taskState.end())
+		m_taskState[taskid] = state;
+	else
+		item->second |= state;
 }
 
 int MpcTaskDispatcher::PutTimeoutTasks(const MPCTask& task)
@@ -242,7 +255,7 @@ int MpcTaskDispatcher::popCommitTask(MPCTask& task)
 		return -1;
 	}
 
-	//LOGI("to POP a commit task, task size: %d  ...", m_atomicCommitNum.load(std::memory_order_relaxed));
+	LOGI("to POP a commit task, task size: %d  ...", m_atomicCommitNum.load(std::memory_order_relaxed));
 	int ret = m_commitQueue.pop(task, 1000);
 	if (0 != ret){
         if(ret == -2){/*timeout*/ }
@@ -258,9 +271,9 @@ int MpcTaskDispatcher::popCommitTask(MPCTask& task)
 	return 0;
 }
 
-int MpcTaskDispatcher::putReadyTask(const MPCTask& task, int type)
+int MpcTaskDispatcher::putReadyTask(const MPCTask& task)
 {
-	if (type == 1)
+	if (!task.invitor)
 	{
 		return putInviteeReadyTask(task);
 	}
@@ -407,6 +420,65 @@ int MpcTaskDispatcher::popInvitorReadyTask(MPCTask& task)
 	return 0;
 }
 
+
+int MpcTaskDispatcher::pushPutTask(const MPCTask& task)
+{
+	LOGI("to push a invited and notified, task: %s ...", task.taskId.data());
+	m_putQueue.push(task);
+	return 0;
+}
+
+int MpcTaskDispatcher::popPutTask(MPCTask& task)
+{
+	return m_putQueue.pop(task);
+}
+
+int MpcTaskDispatcher::removeRequest(const string& taskId)
+{
+	{
+		LOGD("to remove the request task: %s ...", taskId.data());
+		std::unique_lock<std::mutex> lock(m_request_mutex);
+		m_request_empty_cond.wait(lock, [&]() {
+			return !m_request_queue.empty();
+		});
+
+		m_request_queue.erase(taskId);
+		m_request_full_cond.notify_one();//may notify_all
+	}
+
+	LOGI("remove a to-ready task: %s, tasksize: %d ", taskId.data(), m_request_queue.size());
+	return 0;
+}
+
+int MpcTaskDispatcher::addRequest(const string& taskId, const MPCTask& task)
+{
+	//put a in-processing ready task
+	LOGI("to add a to-ready task: %s, tasksize: %d ...", taskId.data(), m_request_queue.size());
+	{
+		std::unique_lock<std::mutex> lock(m_request_mutex);
+		m_request_full_cond.wait(lock, [&]() {return (m_request_queue.size() < getProcessorNum()); });
+		m_request_queue.insert(std::make_pair(taskId, task));
+	}
+	m_request_empty_cond.notify_one();//may be ontify_all  
+
+	LOGI("add a working task, task: %s", taskId.data());
+	return 0;
+}
+
+void MpcTaskDispatcher::putWorkingTask(const MPCTask& task)
+{
+	m_workingTasks.insert(task.taskId, task);
+}
+
+int MpcTaskDispatcher::getWorkingTask(const string& id, MPCTask& task)
+{
+	return m_workingTasks.getElem(id, task);
+}
+
+void MpcTaskDispatcher::removeWorkingTask(const string& id)
+{
+	m_workingTasks.erase(id);
+}
 
 int MpcTaskDispatcher::setFailedResult(const MPCTask& task) {
     string address = MpcEngine::getInstance()->getMpcNodeServant2()->getTaskSession()->getAddress();

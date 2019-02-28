@@ -80,7 +80,7 @@ echo ">>>>>>>>>>>>>>>>>>>> install cryptopp"
 wget https://github.com/weidai11/cryptopp/archive/CRYPTOPP_5_6_5.tar.gz -O cryptopp-CRYPTOPP_5_6_5.tar.gz
 tar -zxf cryptopp-CRYPTOPP_5_6_5.tar.gz
 cd cryptopp-CRYPTOPP_5_6_5
-make -j4
+make -j4 CXXFLAGS="-DNDEBUG -g2 -O2 -fPIC -pipe"
 sudo make install
 
 

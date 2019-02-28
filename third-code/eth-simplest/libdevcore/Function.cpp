@@ -23,7 +23,8 @@ namespace dev
 
 		std::ifstream is;
 		is.open(filename, std::ios::binary);
-		if (is.bad()) {
+		if (!is.good()) {
+            cerr << "cannot open " << filename << "!" << endl;
 			return -1;
 		}
 		if (reader.parse(is, root, false)) {

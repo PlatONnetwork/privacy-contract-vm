@@ -14,6 +14,11 @@ set(VERSION ${PROJECT_VERSION})
 set(INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include/low)
 include_directories(${INCLUDE})
 
+if(WIN_SUPPORT_GMP)
+include_directories(${THIRD_CODE_DIR}/gmp/include)
+link_directories(${THIRD_CODE_DIR}/gmp/lib)
+endif()
+
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 

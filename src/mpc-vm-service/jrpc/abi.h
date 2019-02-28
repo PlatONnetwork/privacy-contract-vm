@@ -9,10 +9,17 @@
 #include <iostream>
 #include <string>
 
+/*
+This is only for test.
+*/
+
 using std::string;
 
 void set_result(const char *taskId, uint64_t status, const char *data);
 
+
+const char* get_ir_hash();
+const char* get_ir_path();
 const char* get_ir_data();
 const char* get_participants();
 const char* get_urls();
@@ -21,3 +28,4 @@ const char* get_invitor();
 
 uint64_t get_status(const char* taskid);
 uint64_t get_fee(const char* method);
+

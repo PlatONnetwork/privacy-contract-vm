@@ -61,7 +61,7 @@
 /**
  * Logarithm of the digit size in base 2.
  */
-#define BN_DIG_LOG	((int)DIGIT_LOG)
+#define BN_DIG_LOG	((int)DIG_LOG)
 
 /**
  * Size in digits of a block sufficient to store the required precision.

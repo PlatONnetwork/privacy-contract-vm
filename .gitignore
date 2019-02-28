@@ -1,10 +1,11 @@
 # vusal studio
 .vs
+pub
 out
 output
 build
-build64
 build32
+build64
 target
 build/**
 .vscode/
@@ -62,3 +63,4 @@ juzix-mpc-toolkit/vsprojects/juzixmpc/Release/**
 /java/config/cfg.client1.config
 /java/config/cfg.client2.config
 
+/build32/ZERO_CHECK.vcxproj.filters

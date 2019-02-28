@@ -9,7 +9,7 @@
 #include "mpc_p2p_task_ready_processor.h"
 
 #include <libdevcore/Function.h>
-
+#include "mpc_put_ready_monitor.h"
 #include "mpc_vm_service.h"
 
 using std::set;
@@ -76,6 +76,7 @@ public:
 
 	int getWorkerNum();
 
+    const string getPlatonUrl() const { return m_platonUrl; }
 	PlatonClient* getPlatonClient() { return m_platonClient; }
 	MpcNodeServant* getMpcNodeServant2() { return m_mpcNodeServer2; }
 
@@ -87,6 +88,7 @@ private:
 	int								m_mode;
 	string							m_proxyEndpoint;
 	string							m_mpcDatDirectory;//to store mpc_taskidxxxx_userid.data
+    string                          m_platonUrl;
 	vector<string>					m_args;
 	bool							m_dataLogFlag = false;
 	volatile bool					m_inited = false;
@@ -94,16 +96,20 @@ private:
 	set<string>						m_irDataHashs;
 
 
+
 	MpcNodeClientFactory*			m_nodeClientFactory = nullptr;
 	MpcTaskDispatcher*				m_taskDispatcher = nullptr;
 	MpcP2pTaskReadyProcessor*		m_readyTaskProcessor = nullptr;
 	MpcNodeServant*					m_mpcNodeServer2 = nullptr;
 	PlatonClient*					m_platonClient = nullptr;
-
+	MPCPutReadyMonitor*				m_readyMonitor = nullptr;
 	vector<dev::func_info_st>		m_FuncInfos;
 	map<string, dev::func_info_st>	m_mapFuncInfos; // funcName -> funcInfo
 
 	SafeMap<std::string, long>		m_userNonce; // user_address -> nonce
+
+    std::condition_variable         m_jrpcErrorCV;
+    std::mutex                      m_jrpcErrorMtx;
 };
 
 NS_PLATON_SDK_MPC_END

@@ -40,6 +40,7 @@ module platon {
 	sequence<NodeCommunicateInfo> NodeCommunicateInfoList;
     sequence<byte> ByteList;
     sequence<string> StringList;
+    sequence<ByteList> ByteLists;
     
     module callback {
 
@@ -50,6 +51,7 @@ module platon {
             string      method; // hash
             MPCRole     role;
             StringList  peers; 
+            int         index; // the position of mpc-function arguments, from 1 to n. eg. mpcfunc(x1,x2,x3,x4,x5,x6,...)
         };
 
         interface TaskCallback{
@@ -58,6 +60,7 @@ module platon {
 
             /* 通知输入数据 */
             ErrorEnum inputData(MpcRequest request, out ByteList data, out ByteList data_default);
+            //ErrorEnum inputData2(MpcRequest request, out ByteLists data);
 
             /* 结果通知 */
             void result(MpcRequest request, ByteList data);

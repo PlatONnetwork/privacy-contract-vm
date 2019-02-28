@@ -76,9 +76,10 @@ link_directories(${CMAKE_BINARY_DIR}/lib ${ICE_ROOT}/lib)
 
 
 IF(WIN32)
-	link_libraries(mpc_vm_core_static)
+    link_directories(${THIRD_CODE_DIR}/jit/lib/win/${PLATDIR}/Debug)
+    link_directories(${THIRD_CODE_DIR}/jit/lib/win/${PLATDIR}/Release)
+    link_libraries(mpc-jit)
 ELSE()
-	link_libraries(mpc_vm_core)
 	link_directories(${THIRD_CODE_DIR}/jit/lib)
 	link_libraries(mpc-jit)
 ENDIF()
@@ -117,7 +118,7 @@ function(compile_test _category _name)
     aux_source_directory(./utils EXE_SRC_LIST)
 
     link_directories(${CMAKE_BINARY_DIR}/lib ${ICE_ROOT}/lib)
-    link_libraries(miracl mpc_vm_core)
+    link_libraries(miracl)
     
 	if(${_category} MATCHES "unittest")
 		#gtest include and link
@@ -143,11 +144,11 @@ function(compile_test _category _name)
    		target_link_libraries(${_name})
    	endif()
     
-    SET_TARGET_PROPERTIES(${_name} PROPERTIES OUTPUT_NAME ${_name} FOLDER "mpc_vm_test")
+    SET_TARGET_PROPERTIES(${_name} PROPERTIES OUTPUT_NAME ${_name} FOLDER "mpc_vm_test/mpc-vm-service")
     
     INSTALL(TARGETS ${_name} RUNTIME DESTINATION ${CMAKE_PREFIX_PATH}/bin)
 endfunction()
 
 
-#compile_test(unittest rsa)
+#compile_test(systest mpc_vm_sdk_test)
 

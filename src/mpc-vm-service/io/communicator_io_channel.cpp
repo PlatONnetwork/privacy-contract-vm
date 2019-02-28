@@ -75,9 +75,9 @@ int CommunicatorIOChannel::send_data(const void * data, int len)
 						return -1;
 					}
 
-					LOGE("==> send data task: %s,   %s => %s,     data size: %d, SEQ: %d ... ", task.taskId.data(), user.data(), task.nodeInfoList[i].user.data(), len, m_seq);
+					//LOGI("==> send data task: %s,   %s => %s,     data size: %d, SEQ: %d ... ", task.taskId.data(), user.data(), task.nodeInfoList[i].user.data(), len, m_seq);
 					mpcClient->forward(task.taskId, user, task.nodeInfoList[i].user, m_tempOutput);
-					LOGE("==> send data task: %s,   %s => %s,     datasize: %d    OK", task.taskId.data(), user.data(), task.participants[i].data(), len);
+					//LOGI("==> send data task: %s,   %s => %s,     datasize: %d    OK", task.taskId.data(), user.data(), task.participants[i].data(), len);
 				}
 				else
 				{
@@ -105,7 +105,7 @@ int CommunicatorIOChannel::recv_data(void  * data, int len)
 	MPCTask& task = m_processor->getTask();
 
 	int timeout = 10;//default timeout 10s
-	LOGE("<==  task: %s, to recv  len: %d, remain buffer size: %d ", task.taskId.data(), len, m_recvBuffer.size());
+	//LOGI("<==  task: %s, to recv  len: %d, remain buffer size: %d ", task.taskId.data(), len, m_recvBuffer.size());
 	int ret = 0;
 	while (m_recvBuffer.size() < len)
 	{
@@ -132,7 +132,7 @@ int CommunicatorIOChannel::recv_data(void  * data, int len)
 		}
 
 		m_from = buffer->from;
-		LOGE("<== task: %s, recv datasize: %d , seq: %d", buffer->taskId, buffer->length, buffer->seq);
+		//LOGI("<== task: %s, recv datasize: %d , seq: %d", buffer->taskId, buffer->length, buffer->seq);
 		m_recvBuffer.append((char*)buffer->data, buffer->length);
 
 		buffer->free();

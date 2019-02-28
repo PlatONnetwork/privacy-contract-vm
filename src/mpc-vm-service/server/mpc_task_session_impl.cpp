@@ -16,7 +16,7 @@ NS_PLATON_SDK_MPC_BEG
 	mapTransactionCB.insert(user_address, proxy);
 	this->user_address = user_address;
 
-	//MpcEngine::getInstance()->getPlatonClient()->setActor(user_address);
+	MpcEngine::getInstance()->getPlatonClient()->setActor(user_address);
 
 	return ::platon::ErrorEnum::NoError;
 }

@@ -20,13 +20,13 @@
  * along with RELIC. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @file
- *
- * Implementation of the low-level binary field bit multiplication functions.
- *
- * @ingroup fb
- */
+ /**
+  * @file
+  *
+  * Implementation of the low-level binary field bit multiplication functions.
+  *
+  * @ingroup fb
+  */
 
 #include <xmmintrin.h>
 #include <tmmintrin.h>
@@ -39,12 +39,19 @@
 #include "relic_util.h"
 #include "macros.h"
 
-/*============================================================================*/
-/* Public definitions                                                         */
-/*============================================================================*/
+  /*============================================================================*/
+  /* Public definitions                                                         */
+  /*============================================================================*/
 
 void fb_muld_low(dig_t *c, const dig_t *a, const dig_t *b, int size) {
-	relic_align dig_t t[16][size + 1];
+    //relic_align dig_t t[16][size + 1];
+    //relic_align dig_t t[16][size + 1];
+    dig_t** t = (dig_t**)malloc(16);
+    int ii = 0;
+    for (ii = 0; ii < 16; ii++){
+        t[ii] = (dig_t*)malloc(size + 1);
+    }
+
 	dig_t u, r0, r1, r2, r4, r8, *tmpc;
 	const dig_t *tmpa;
 	int i, j;
@@ -108,6 +115,11 @@ void fb_muld_low(dig_t *c, const dig_t *a, const dig_t *b, int size) {
 		u = *a & 0x0F;
 		fb_addd_low(c, c, t[u], size + 1);
 	}
+
+    for (ii = 0; ii < 16; ii++) {
+        free(t[ii]);
+    }
+    free(t);
 }
 
 #if defined(__PCLMUL__) || defined(__INTEL_COMPILER)

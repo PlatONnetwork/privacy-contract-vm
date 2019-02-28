@@ -28,6 +28,7 @@ public:
 	//the task processor will call this function to clean
 	int removeRequest(const string& taskId);
 
+    int updateTaskState(MPCTask& task);
 	int processReadyTask();
 
 	bool running() { return running_; };

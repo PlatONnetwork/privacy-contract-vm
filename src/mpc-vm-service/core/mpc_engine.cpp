@@ -20,14 +20,6 @@ using namespace platon::mpc;
 #include "libdevcore/RLP.h"
 
 #include "jit.h"
-#ifdef _WIN32
-bool MyPlatON_InitJIT(const std::vector<std::string> &vectPluginName) {
-    LOGI("windows not supported at present!");
-    return true;
-}
-#else
-#define MyPlatON_InitJIT PlatON_InitJIT
-#endif
 
 #ifdef ENABLE_ENCRYPT
 #include <libdevcrypto/Common.h>
@@ -86,6 +78,13 @@ void MpcEngine::destroy()
     }
     LOGI("destroy task dispatcher ok.");
 
+	if (m_readyMonitor)
+	{
+		m_readyMonitor->destroy();
+		delete m_readyMonitor;
+	}
+	LOGI("destroy ready monitor ok.");
+
     if (m_readyTaskProcessor) {
         delete m_readyTaskProcessor;
         m_readyTaskProcessor = nullptr;
@@ -125,6 +124,7 @@ int MpcEngine::init(
     m_args = _args;
 
     m_mpcDatDirectory = "";
+    m_platonUrl = _platonUrl;
 
 
     int step = 0;
@@ -165,6 +165,16 @@ int MpcEngine::init(
         }
     }
 
+	{
+		LOGI("init step: %2d INIT MpcPutReadyMonitor", step++);
+		m_readyMonitor = new MPCPutReadyMonitor();
+		if (0 != m_readyMonitor->init())
+		{
+			LOGE("INIT MpcPutReadyMonitor FAILED");
+			return -1;
+		}
+	}
+
     {
         LOGI("init step: %2d INIT MpcNodeClientFactory", step++);
         m_nodeClientFactory = new MpcNodeClientFactory();
@@ -176,34 +186,47 @@ int MpcEngine::init(
     }
 
     {
-        LOGI("init step: %2d INIT PlatON JIT", step++);
-        std::vector<std::string> libs{
-            lib_mpc_vm_core_path,
-            lib_protobuf_path
-        };
-        for (auto&lib : libs) {
-            LOGI("INIT PlatON JIT lib: %s", lib.c_str());
-        }
-        if (!MyPlatON_InitJIT(libs)) {
-            LOGE("INIT PlatON JIT failed !");
-            return -1;
-        }
+        /// NOT NECESSARY
+        /// LOGI("init step: %2d INIT PlatON JIT", step++);
+        /// std::vector<std::string> libs{
+        ///     lib_mpc_vm_core_path,
+        ///     lib_protobuf_path
+        /// };
+        /// for (auto&lib : libs) {
+        ///     LOGI("INIT PlatON JIT lib: %s", lib.c_str());
+        /// }
+        /// if (!PlatON_InitJIT(libs)) {
+        ///     LOGE("INIT PlatON JIT failed !");
+        ///     return -1;
+        /// }
     }
     {
         LOGI("init step: %2d INIT ABI FUNCTION", step++);
-        int ret = dev::GetFunctionInfo(mpcc_cpp_abi_json_filepath, m_FuncInfos);
-        if (ret != 0) {
-            LOGE("INIT ABI FUNCTION FAILED!");
-            return -1;
-        }
-        for (auto& fi : m_FuncInfos) {
-            fi.print();
-        }
+        if (!platon::mpc::SysUtilsTool::checkFileExists(mpcc_cpp_abi_json_filepath)) {
+            vector<string> fns = { "set_result","get_ir_data","get_participants","get_urls","get_url_by_id",
+                "get_invitor","get_status","get_fee" };
+            for (auto fn : fns) {
+                dev::func_info_st info;
+                info.func_name = fn;
 
-        ret = dev::GetFunctionInfo(mpcc_cpp_abi_json_filepath, m_mapFuncInfos);
-        if (ret != 0) {
-            LOGE("INIT ABI FUNCTION FAILED!");
-            return -1;
+                m_mapFuncInfos[fn] = info;
+            }
+        }
+        else {
+            int ret = dev::GetFunctionInfo(mpcc_cpp_abi_json_filepath, m_FuncInfos);
+            if (ret != 0) {
+                LOGE("INIT ABI FUNCTION FAILED!");
+                return -1;
+            }
+            for (auto& fi : m_FuncInfos) {
+                fi.print();
+            }
+
+            ret = dev::GetFunctionInfo(mpcc_cpp_abi_json_filepath, m_mapFuncInfos);
+            if (ret != 0) {
+                LOGE("INIT ABI FUNCTION FAILED!");
+                return -1;
+            }
         }
     }
 
@@ -215,6 +238,20 @@ int MpcEngine::init(
             return -1;
         }
     }
+
+
+    // start monitor for PlatonClient
+    /// std::thread([&](MpcEngine* engine) {
+    ///     while (m_inited)
+    ///     {
+    ///         std::unique_lock<std::mutex> lock(m_jrpcErrorMtx);
+    ///         m_jrpcErrorCV.wait(lock, [&]() {return !m_platonClient->ok(); });
+    ///         delete m_platonClient;
+    ///         m_platonClient = new PlatonClient(_platonUrl);
+    ///     }
+    /// 
+    /// }, this);
+    
 
     LOGI("MPC ENGINE INIT SUCCESS");
     m_inited = true;
@@ -282,9 +319,16 @@ int MpcEngine::cacheIR(const std::string& ir_data, std::string& ir_hash, std::st
     return 0;
 }
 
+// note: tag is only for test
+#ifdef RUN_WITHOUT_PLATON
+#define SET_TAG(T) transparams.tag = #T;
+#else
+#define SET_TAG(T) transparams.tag = "";
+#endif
+
+
 int MpcEngine::getAllInfo(MPCTask& task) {
-#define DEBUG_TEST
-#if defined(ENABLE_ENCRYPT) && defined(DEBUG_TEST)
+#if defined(ENABLE_ENCRYPT) && (defined(_DEBUG) || defined(DEBUG))
     dev::Public k("f5174b29d3ec35ece4752eeefaeb8aa1b875c3f1884ea8d84cce10422248d87dfbac11489232cba8623c2bb586ee4ccff4753c46bae5d64c37e6ece99273e384");
     std::vector<byte> bytes;
 
@@ -308,9 +352,7 @@ int MpcEngine::getAllInfo(MPCTask& task) {
     int olen2 = vectobuf(plain_text, outbuf2);
     std::string dec_s = ToHexString(outbuf2, olen2);
     LOGI("dec_s %s", dec_s.c_str());
-
 #endif // for debug test
-#undef DEBUG_TEST
 
 
     string address = m_mpcNodeServer2->m_taskSession->getAddress();
@@ -320,19 +362,23 @@ int MpcEngine::getAllInfo(MPCTask& task) {
     }
     TransParams transparams;
     transparams.from = address;
-    transparams.to = task.iraddr;
+    transparams.to = task.iraddr; // maybe cache url/parties... of same iraddr. in the future
     transparams.data = "";
 
     task.method_hash = platon::mpc::SSL::md5(task.method);
     LOGI("method_hash %s", task.method_hash.c_str());
 
+    // use stack client instead of global
+    //PlatonClient& platonClient = *m_platonClient;
+    PlatonClient platonClient(m_platonUrl);
+
     vector<byte> txtype = { 0,0,0,0,0,0,0,1 };
-    // note: tag is only for test
     {
-        //transparams.tag = "get_ir_data";
+#ifndef RUN_WITHOUT_PLATON
+        SET_TAG(get_ir_data);
         transparams.data = dev::toHexPrefixed(dev::rlpList(txtype, m_mapFuncInfos["get_ir_data"].func_name));
         LOGI("transparams %s", transparams.toString().c_str());
-        string ir_data = m_platonClient->get_ir_data(transparams);
+        string ir_data = platonClient.get_ir_data(transparams);
         LOGI("ir data len: %d", ir_data.length());
 
         int len = ir_data.length();
@@ -345,13 +391,18 @@ int MpcEngine::getAllInfo(MPCTask& task) {
             LOGE("CACHE IR DATA FAILED!");
             return -1;
         }
+#else
+        task.irhash = platonClient.get_ir_hash(transparams);
+        task.irpath = platonClient.get_ir_path(transparams);
+#endif
     }
 
     {
-        transparams.tag = "get_participants";
+        SET_TAG(get_participants);
         transparams.data = dev::toHexPrefixed(dev::rlpList(txtype, m_mapFuncInfos["get_participants"].func_name));
-        string ir_parties = m_platonClient->get_participants(transparams);
+        string ir_parties = platonClient.get_participants(transparams);
         LOGI("ir parties len: %d", ir_parties.length());
+#ifndef RUN_WITHOUT_PLATON
         {
             std::string s = getString(ir_parties);
             if (s == "") {
@@ -366,6 +417,7 @@ int MpcEngine::getAllInfo(MPCTask& task) {
             LOGI("ir_parties: %s", ir_parties.c_str());
             delete[] buf;
         }
+#endif
         task.participants = split(ir_parties, '&');
         if (task.participants.size()<2) {
             LOGE("participants size:%d", task.participants.size());
@@ -374,10 +426,11 @@ int MpcEngine::getAllInfo(MPCTask& task) {
     }
 
     {
-        transparams.tag = "get_urls";
+        SET_TAG(get_urls);
         transparams.data = dev::toHexPrefixed(dev::rlpList(txtype, m_mapFuncInfos["get_urls"].func_name));
-        string ir_urls = m_platonClient->get_urls(transparams);
+        string ir_urls = platonClient.get_urls(transparams);
         LOGI("ir urls len: %d", ir_urls.length());
+#ifndef RUN_WITHOUT_PLATON
         {
             std::string s = getString(ir_urls);
             if (s == "") {
@@ -392,6 +445,7 @@ int MpcEngine::getAllInfo(MPCTask& task) {
             LOGI("ir_urls: %s", ir_urls.c_str());
             delete[] buf;
         }
+#endif
         task.urls = split(ir_urls, ',');
         for (auto url : task.urls) {
             auto au = split(url, '$');
@@ -435,26 +489,12 @@ int MpcEngine::getAllInfo(MPCTask& task) {
         }
     }
 
-    ///	{
-    ///		transparams.tag = "get_url_by_id|" + address;
-    ///		transparams.data = dev::toHexPrefixed(dev::rlpList(txtype, m_mapFuncInfos["get_url_by_id"].func_name, address));
-    ///		string ir_url = m_platonClient->get_url_by_id(transparams, address.c_str());
-    ///		std::cout << "ir_url:" << ir_url << std::endl;
-    ///		{
-    ///			std::string s = getString(ir_url);
-    ///			unsigned char* buf = new unsigned char[s.length() / 2];
-    ///			int olen = hexstr2buf(s, buf);
-    ///			ir_url = std::string((char*)buf);
-    ///			std::cout << "ir_url:" << ir_url << std::endl;
-    ///			delete[] buf;
-    ///		}
-    ///	}
-
     {
-        transparams.tag = "get_invitor";
+        SET_TAG(get_invitor);
         transparams.data = dev::toHexPrefixed(dev::rlpList(txtype, m_mapFuncInfos["get_invitor"].func_name));
-        string ir_invitor = m_platonClient->get_invitor(transparams);
+        string ir_invitor = platonClient.get_invitor(transparams);
         LOGI("ir invitor len: %d", ir_invitor.length());
+#ifndef RUN_WITHOUT_PLATON
         {
             std::string s = getString(ir_invitor);
             if (s == "") {
@@ -469,6 +509,7 @@ int MpcEngine::getAllInfo(MPCTask& task) {
             LOGI("ir_invitor: %s", ir_invitor.c_str());
             delete[] buf;
         }
+#endif
         if (ir_invitor == address) {
             task.invitor = true;
             task.role = platon::MPCRole::PART_ALICE;
@@ -478,19 +519,8 @@ int MpcEngine::getAllInfo(MPCTask& task) {
             task.role = platon::MPCRole::PART_BOB;
         }
     }
-    ///	{
-    ///		transparams.tag = "get_status|" + task.taskId;
-    ///		transparams.data = "0x" + m_mapFuncInfos["get_status"].func_sha3.substr(0, 8);
-    ///		uint64_t ir_status = m_platonClient->get_status(transparams, task.taskId.c_str());
-    ///	}
-    ///	{
-    ///		transparams.tag = "get_fee|" + task.method;
-    ///		transparams.data = "0x" + m_mapFuncInfos["get_fee"].func_sha3.substr(0, 8);
-    ///		uint64_t ir_fee = m_platonClient->get_fee(transparams, task.method.c_str());
-    ///	}
 
     return 0;
-
 }
 
 int MpcEngine::commit(MPCTask& task)
@@ -505,6 +535,7 @@ int MpcEngine::commit(MPCTask& task)
         return -1;
     }
 
+	m_taskDispatcher->updateTaskState(task.taskId, 0);
     int ret = m_taskDispatcher->putCommitTask(task);
     if (ret != 0) {
         LOGE("commit a rsync task: %s failed !", task.taskId.data());

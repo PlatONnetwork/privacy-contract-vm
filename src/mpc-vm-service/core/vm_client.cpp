@@ -61,7 +61,7 @@ bool VMClient::commit(const VMPara para) {
 
 		MpcEngine* engine = MpcEngine::getInstance();
 		if (0 != engine->commit(task)) {
-            LOGW("commit tasd to engine failed !!!");
+            LOGW("commit task to engine failed !!!");
 			return false;
 		}
 	}
