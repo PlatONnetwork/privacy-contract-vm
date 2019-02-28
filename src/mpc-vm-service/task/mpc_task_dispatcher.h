@@ -61,7 +61,7 @@ public:
 	**     InviteeProcessor = 1
 	** };
 	*/
-	int putReadyTask(const MPCTask& task, int type = 0);
+	int putReadyTask(const MPCTask& task);
 	int popReadyTask(MPCTask& task, int type = 0);
 
 	int putInviteeReadyTask(const MPCTask& task);
@@ -81,6 +81,16 @@ public:
 
 	int GetTimeoutTasks(std::vector<MPCTask>& tasks);
 	int PutTimeoutTasks(const MPCTask& task);
+
+	int pushPutTask(const MPCTask& task);
+	int popPutTask(MPCTask& task);
+
+	int removeRequest(const string& taskId);
+	int addRequest(const string& taskId, const MPCTask& task);
+
+	void putWorkingTask(const MPCTask& task);
+	int getWorkingTask(const string& id, MPCTask& task);
+	void removeWorkingTask(const string& id);
 
     int setFailedResult(const MPCTask& task);
 
@@ -114,9 +124,23 @@ private:
 	int														m_taskTimeout = 80;//about 4 times of the cost block ensure time
 	std::queue<MPCTask>						m_timeoutQueue;
 
+	//// invite, notify put队列 
+	SafeQueue<MPCTask>					m_putQueue;
+
+	//// working tasks 
+	//std::mutex											 m_workingMutex;
+	SafeMap<std::string, MPCTask>			 m_workingTasks;//working queue
+
+	////// processing reading tasks
+	std::mutex											 m_request_mutex;
+	std::condition_variable                         m_request_full_cond;
+	std::condition_variable                         m_request_empty_cond;
+	std::map<std::string, MPCTask>			 m_request_queue;//request queue
+
 	// peer waiting task map
 	//SafeMap<string, MPCTask>					m_PeerWaitTasks; // taskid -> MPCTask
-	SafeMap<string, int>								m_taskState;
+	std::recursive_mutex							m_stateMutex;
+	std::map<string, int>							m_taskState;
 
 	//Bob 第一次输入缓存队列
 	SafeMap<string, map<int, MpcBufferPtr> >	m_firstInputBufferMap;

@@ -89,7 +89,7 @@ struct TransParams
 		if (gas != "")root["gas"] = gas;
 		if (gasPrice != "")root["gasPrice"] = gasPrice;
 		if (value != "")root["value"] = value;
-		//if (tag != "")root["tag"] = tag;
+		if (tag != "")root["tag"] = tag;
 		root["data"] = data;
 
 		//std::string s = root.toStyledString();

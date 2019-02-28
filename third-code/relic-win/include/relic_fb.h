@@ -58,7 +58,7 @@
 /**
  * Logarithm of the digit size in base 2.
  */
-#define FB_DIG_LOG	((int)DIGIT_LOG)
+#define FB_DIG_LOG	((int)DIG_LOG)
 
 /**
  * Size in digits of a block sufficient to store a binary field element.

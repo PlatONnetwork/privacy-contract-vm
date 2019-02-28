@@ -1,6 +1,6 @@
 #!/bin/bash
 
-####  1.  instlal packages by yum or apt install
+####  1.  install packages by yum or apt install
 Os=`awk -F= '/^NAME/{print $2}' /etc/os-release`
 LinuxPlat=`echo ${Os} |tr -d '"'`
 if [ "${LinuxPlat}" = "CentOS Linux" ]; then
@@ -105,7 +105,7 @@ cd ..
 echo ">>>>>>>>>>>>>>>>>>>> install cryptopp"
 tar -zxf cryptopp-CRYPTOPP_5_6_5.tar.gz
 cd cryptopp-CRYPTOPP_5_6_5
-make -j4
+make -j4 CXXFLAGS="-DNDEBUG -g2 -O2 -fPIC -pipe"
 sudo make install
 cd ..
 
@@ -113,7 +113,7 @@ cd ..
 cp ../relic ./ -R
 cd relic
 mkdir build && cd build && cmake -DALIGN=16 -DARCH=X64 -DARITH=curve2251-sse -DCHECK=off -DFB_POLYN=251 -DFB_METHD="INTEG;INTEG;QUICK;QUICK;QUICK;QUICK;LOWER;SLIDE;QUICK" -DFB_PRECO=on -DFB_SQRTF=off -DEB_METHD="PROJC;LODAH;COMBD;INTER" -DEC_METHD="CHAR2" -DCOMP="-O3 -funroll-loops -fomit-frame-pointer -march=native -msse4.2 -mpclmul" -DTIMER=CYCLE -DWITH="MD;DV;BN;FB;EB;EC" -DWSIZE=64 ..
-make
+make -j4
 sudo make install
 cd ..
 

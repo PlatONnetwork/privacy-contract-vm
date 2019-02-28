@@ -275,6 +275,8 @@ typedef ::std::vector< ::Ice::Byte> ByteList;
 
 typedef ::std::vector< ::std::string> StringList;
 
+typedef ::std::vector< ::platon::ByteList> ByteLists;
+
 namespace callback
 {
 
@@ -286,6 +288,7 @@ struct MpcRequest
     ::std::string method;
     ::platon::MPCRole role;
     ::platon::StringList peers;
+    ::Ice::Int index;
 };
 
 struct TransactionParams
@@ -521,7 +524,7 @@ template<>
 struct StreamableTraits< ::platon::callback::MpcRequest>
 {
     static const StreamHelperCategory helper = StreamHelperCategoryStruct;
-    static const int minWireSize = 6;
+    static const int minWireSize = 10;
     static const bool fixedLength = false;
 };
 
@@ -536,6 +539,7 @@ struct StreamWriter< ::platon::callback::MpcRequest, S>
         __os->write(v.method);
         __os->write(v.role);
         __os->write(v.peers);
+        __os->write(v.index);
     }
 };
 
@@ -550,6 +554,7 @@ struct StreamReader< ::platon::callback::MpcRequest, S>
         __is->read(v.method);
         __is->read(v.role);
         __is->read(v.peers);
+        __is->read(v.index);
     }
 };
 

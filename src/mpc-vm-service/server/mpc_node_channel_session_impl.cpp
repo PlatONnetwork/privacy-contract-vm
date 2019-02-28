@@ -38,50 +38,66 @@ void NodeChannelSessionImpl::ready(const ::platon::service::TaskParams& params,
 
 int NodeChannelSessionImpl::notify2(const ::platon::service::TaskParams& task, const ::Ice::Current& c)
 {
-	LOGI("node peer notify2 coming ..., task: %s", task.taskid.data());
 	MpcTaskDispatcher *disp = MpcEngine::getInstance()->getTaskDispatcher();
 
 	int status = 0x02;//state code:   alice: 0x01 bob: 0x02
-	int st = 0;
-	if (0 == disp->findTaskState(task.taskid, st) && (st & 0x01))
+	disp->updateTaskState(task.taskid, status);
+	disp->findTaskState(task.taskid, status);
+    LOGI("node peer notify2 coming 2 ..., task: %s status: %d", task.taskid.data(), status);
+
+	if (status == 0x03)
 	{
-		st |= status;
-	}
-	else
-	{
-		st = status;
+		LOGI("alice and bob both invited and notified, task: %s", task.taskid.data());
+
+		MPCTask mpctask;
+		if (0 != disp->getWorkingTask(task.taskid, mpctask))
+		{
+			LOGE("cannot find working task: %s", task.taskid.data());
+		}
+		else
+		{
+			disp->pushPutTask(mpctask);
+		}
 	}
 
-	disp->updateTaskState(task.taskid, st);
-
-	return st;
+	LOGI("node peer notify2 coming 3 ..., task: %s status: %d", task.taskid.data(), status);
+	return status;
 }
 
 int NodeChannelSessionImpl::invite2(const ::platon::service::TaskParams& task, const ::Ice::Current& c)
 {
-	LOGI("node peer invite2 coming ..., task: %s", task.taskid.data());
 	MpcTaskDispatcher *disp = MpcEngine::getInstance()->getTaskDispatcher();
 
 	int status = 0x01;//state code:   alice: 0x01 bob: 0x02
-	int st = 0;
-	if (0 == disp->findTaskState(task.taskid, st) && (st & 0x02))
-	{
-		st |= status;
-	}
-	else
-	{
-		st = status;
-	}
+	disp->updateTaskState(task.taskid, status);
 
-	disp->updateTaskState(task.taskid, st);
+	disp->findTaskState(task.taskid, status);
+    LOGI("node peer invite2 coming 2 ..., task: %s status: %d", task.taskid.data(), status);
+
+	if (status == 0x03)
+	{
+		LOGI("alice and bob both invited and notified, task: %s", task.taskid.data());
+
+		MPCTask mpctask;
+		if (0 != disp->getWorkingTask(task.taskid, mpctask))
+		{
+			LOGE("cannot find working task: %s", task.taskid.data());
+		}
+		else
+		{
+			disp->pushPutTask(mpctask);
+		}
+	}
 	
-	return st;
+	LOGI("node peer invite2 coming 3 ..., task: %s status: %d", task.taskid.data(), status);
+	return status;
 }
+
 void NodeChannelSessionImpl::inputData(const ::std::string& taskId, const ::std::string& fromUser,
 	const ::platon::ByteList& data, const ::Ice::Current& current/* = ::Ice::Current()*/) {
 
-	std::cout << __FUNCTION__ << " receive data from peer node task:" << taskId
-		<< " user:" << fromUser << " data size:" << data.size() << std::endl;
+	//std::cout << __FUNCTION__ << " receive data from peer node task:" << taskId
+	//	<< " user:" << fromUser << " data size:" << data.size() << std::endl;
 
 	MpcBufferPtr buffer = new MpcBuffer((uint8_t*)data.data(), data.size() - sizeof(int));
 	buffer->setFrom(fromUser);

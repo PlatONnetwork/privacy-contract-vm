@@ -89,4 +89,5 @@ bool parseParas(int argc, char* argv[], Paras& paras, bool check = true);
 void help_test(stringstream& sss);
 void help_mpc_test();
 void help_mpc_sdk_test();
+void help_mpc_vm_sdk_test();
 

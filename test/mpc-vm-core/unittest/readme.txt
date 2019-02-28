@@ -1,2 +1,0 @@
-# in this folder, we main offer some trivious and experiental test
-this test case can just copy to unittest folder, and you can add a test case with: compile_test(unittest xxx) cmd in the upper CMakeLists.txt

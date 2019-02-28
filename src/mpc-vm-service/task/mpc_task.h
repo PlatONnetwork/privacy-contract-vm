@@ -52,6 +52,7 @@ public:
     map<string, string>			addr_url; // address -> url
     vector<NodeCommunicateInfo> nodeInfoList;
 
+
     ///
     vector<string>				participants; // participants in the mpc task
     vector<string>				receivers; // receiver of mpc result
@@ -85,7 +86,10 @@ public:
         N // The number of status
     };
     Status                      status = Status::INIT;
-    string                      errmsg = "OK"; // the error message in each status
+    string                      errmsg = ""; // the error message in each status
+
+    ///
+    double                      elapse = 0; // elapse in MpcTaskProcessor::processMpcBusi
 
 public:
     string toString() {
@@ -105,6 +109,7 @@ public:
             << "\n   " << "     irpath: " << irpath
             << "\n   " << "method_hash: " << method_hash
             << "\n   " << "  transhash: " << transhash
+            << "\n   " << "     elapse: " << elapse
             << "\n   " << "     status: " << getStatus()
             << "\n   " << "     errmsg: " << errmsg
             << "\n===================================================\n";
@@ -155,6 +160,8 @@ public:
 
         status = task.status;
         errmsg = task.errmsg;
+
+        elapse = task.elapse;
     };
 
     MPCTask& operator=(const MPCTask& task)
@@ -195,6 +202,8 @@ public:
         status = task.status;
         errmsg = task.errmsg;
 
+        elapse = task.elapse;
+        
         return *this;
     };
 

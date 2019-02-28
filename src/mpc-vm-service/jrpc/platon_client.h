@@ -18,6 +18,8 @@ jsonrpcstub platon.json --cpp-server=AbstractStubServer --cpp-client=StubClient
 class PlatonClient {
 public:
 	PlatonClient(const std::string& url);
+    ~PlatonClient() {}
+    bool ok() { return ok_; }
 
 public:
 	// eth_xxx
@@ -32,7 +34,9 @@ public:
     void set_result(const TransParams& transparams, const char *taskId, uint64_t status, const char *data);
     void set_result(const TransParams& transparams);
 
-	std::string get_ir_data(const TransParams& transparams);
+    std::string get_ir_hash(const TransParams& transparams);
+    std::string get_ir_path(const TransParams& transparams);
+    std::string get_ir_data(const TransParams& transparams);
 	std::string get_participants(const TransParams& transparams);
 	std::string get_urls(const TransParams& transparams);
 	std::string get_url_by_id(const TransParams& transparams, const char* address);
@@ -41,8 +45,11 @@ public:
 	uint64_t get_fee(const TransParams& transparams, const char* method);
 
 private:
+    bool ok_ = true;
+#ifndef RUN_WITHOUT_PLATON
 	jsonrpc::HttpClient httpclient;
 	StubClient client;
+#endif
 };
 
 NS_PLATON_SDK_MPC_END

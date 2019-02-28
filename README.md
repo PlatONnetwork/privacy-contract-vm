@@ -2,9 +2,10 @@
 # PlatON mpc vm
 
 - [PlatON mpc vm](#platon-mpc-vm)
-    - [Directory Structure](#directory-structure)
-    - [Building & Installing](#building--installing)
-    - [Dependencies](#dependencies)
+  - [Directory Structure](#directory-structure)
+  - [Overview](#overview)
+  - [Building & Installing](#building--installing)
+  - [Dependencies](#dependencies)
 
 
 ## Directory Structure
@@ -16,6 +17,83 @@
 - [test](test/README.md)
 - [tools](tools/README.md)
 - [script](script/README.md)
+
+## Overview
+
+
+Supported on each platfrom:
+
+<table>
+    <tr>
+        <td rowspan="2" width="200"><b>Platform</b></td>
+        <td rowspan="2"><b>IDE/Compiler</b></td>
+        <td colspan="2" align="center"><b>mpc-libs(relic)</b></td>
+        <td colspan="2" align="center"><b>mpc-libs(miracl)</b></td>
+        <td colspan="2" align="center"><b>mpc-jit</b></td>
+        <td colspan="2" align="center"><b>plang</b></td>
+    </tr>
+    <tr>
+        <td>Debug</td>
+        <td>Release</td>
+        <td>Debug</td>
+        <td>Release</td>
+        <td>Debug</td>
+        <td>Release</td>
+        <td>Debug</td>
+        <td>Release</td>
+    </tr>
+    <tr>
+        <td>window 10 Win32</td>
+        <td>VS 2017</td>
+        <td style="color:gray">OK<sup>(1)</sup></td>
+        <td style="color:gray">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+    </tr>
+    <tr>
+        <td>window 10 x64</td>
+        <td>VS 2017</td>
+        <td style="color:gray">OK</td>
+        <td style="color:gray">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+    </tr>
+    <tr>
+        <td>Ubuntu 16.04.5 LTS amd64</td>
+        <td>gcc 5.4</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+    </tr>
+    <tr>
+        <td>Centos 7.5 amd64</td>
+        <td>gcc 4.9.2</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+        <td style="color:green">OK</td>
+    </tr>
+</table>
+
+
+<font style="color:gray">OK<sup>(1)</sup></font>: Compile OK but run.
 
 
 ## Building & Installing
@@ -48,20 +126,15 @@ Here are the detail commands:
     ```
 
   - instlall the platon mpc core
-    ```bash
-    # clone repository:
-    > git clone https://github.com/PlatONnetwork/privacy-contract-vm.git --recursive
-    > git submodule update --recursive --remote
-    # compile
-    > cd private-contract-vm
+    ```
     > mkdir build
     > cd build
-    # -DOPENSSL_ROOT_DIR=/path/to/openssl -DBOOST_INCLUDEDIR=/path/to/boost/include is required on Windows
     > cmake .. -DOPENSSL_ROOT_DIR=/path/to/openssl -DBOOST_INCLUDEDIR=/path/to/boost/include
     > make
     > sudo make install
     ```
 
+***Also, you can ref libcopy & libpublish.***
 
 ## Dependencies
 
@@ -71,29 +144,36 @@ These modules are listed below:
 
 **miracl**
 
-Default supported.
+Default supported on windows.
 
 If you want to test miracl,
     
     > cd test/miracl-test
     > ./gen_test.sh
 
+On windows, use relic, usage:
+   
+    -DOT_NP_USE_RELIC_WIN=1
+
 
 **relic**
+
+Default supported on linux.
 
 The relic is not originly ont support on window, currently it only supported on linux.
 
 Here are the intructions to install the relic:
-    ```
-	> cd third-code/relic
-    > mkdir build && cd build && cmake -DALIGN=16 -DARCH=X64 -DARITH=curve2251-sse -DCHECK=off -DFB_POLYN=251 -DFB_METHD="INTEG;INTEG;QUICK;QUICK;QUICK;QUICK;LOWER;SLIDE;QUICK" -DFB_PRECO=on -DFB_SQRTF=off -DEB_METHD="PROJC;LODAH;COMBD;INTER" -DEC_METHD="CHAR2" -DCOMP="-O3 -funroll-loops -fomit-frame-pointer -march=native -msse4.2 -mpclmul" -DTIMER=CYCLE -DWITH="MD;DV;BN;FB;EB;EC" -DWSIZE=64 ..
-    > make && make install
-    ```
+
+```
+> cd third-code/relic
+> rm -rf build && mkdir build && cd build && cmake -DALIGN=16 -DARCH=X64 -DARITH=curve2251-sse -DCHECK=off -DFB_POLYN=251 -DFB_METHD="INTEG;INTEG;QUICK;QUICK;QUICK;QUICK;LOWER;SLIDE;QUICK" -DFB_PRECO=on -DFB_SQRTF=off -DEB_METHD="PROJC;LODAH;COMBD;INTER" -DEC_METHD="CHAR2" -DCOMP="-O3 -funroll-loops -fomit-frame-pointer -march=native -msse4.2 -mpclmul" -DTIMER=CYCLE -DWITH="MD;DV;BN;FB;EB;EC" -DWSIZE=64 ..
+> make && make install
+```
 
 Some useful issues:
 [how to support for Visual Studio 2015+](https://github.com/relic-toolkit/relic/pull/45).
 
-If you want to use relic instead of `miracl`, usage:
+If you want to use `miracl` instead of `relic`, usage:
     
     -DOT_NP_USE_MIRACL=1
 
@@ -124,6 +204,7 @@ sudo yum install boost-devel
 On CentOS the version of boost installed by yum is almost lower than 1.66.0, so you may have to upgrade the boost to 1.66.0.
 
 Especially On Windows, cmake should run with macro define:
+
 ```bash
     -DBOOST_ROOT=/path/to/boost
 OR

@@ -47,7 +47,7 @@
 void fb_slvn_low(dig_t *c, const dig_t *a) {
 	int i;
 	dig_t *p, u0, u1, u2, u3;
-	void *tab = fb_poly_get_slv();
+    dig_t *tab = fb_poly_get_slv();
 	__m128i m0, m1, m2, m3, m4, sqrt0, sqrt1, mask0, mask1, mask2, r0, r1, t0, t1, perm;
 
 	perm = _mm_set_epi32(0x0F0D0B09, 0x07050301, 0x0E0C0A08, 0x06040200);
@@ -164,7 +164,8 @@ void fb_slvn_low(dig_t *c, const dig_t *a) {
 	m1 = _mm_or_si128(m1, m2);
 	m3 = _mm_or_si128(m3, m4);
 #ifndef __PCLMUL__
-	align dig_t x[2];
+	//align dig_t x[2];
+    relic_align dig_t x[2];
 	_mm_store_si128((__m128i *)x, m1);
 	u0 = x[0];
 	u1 = x[1];

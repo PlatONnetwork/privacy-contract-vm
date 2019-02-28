@@ -52,13 +52,13 @@
  * Logarithm of the digit size in bits in base two.
  */
 #if DIGIT == 8
-#define DIGIT_LOG		3
+#define DIG_LOG		3
 #elif DIGIT == 16
-#define DIGIT_LOG		4
+#define DIG_LOG		4
 #elif DIGIT == 32
-#define DIGIT_LOG		5
+#define DIG_LOG		5
 #elif DIGIT == 64
-#define DIGIT_LOG		6
+#define DIG_LOG		6
 #endif
 
 /*============================================================================*/
@@ -129,7 +129,11 @@ typedef unsigned long long ull_t;
  * Specification for aligned variables.
  */
 #if ALIGN > 1
+#ifdef _WIN32
+#define relic_align 			 __declspec(align(ALIGN))
+#else
 #define relic_align 			__attribute__ ((aligned (ALIGN)))
+#endif
 #else
 #define relic_align 			/* empty*/
 #endif

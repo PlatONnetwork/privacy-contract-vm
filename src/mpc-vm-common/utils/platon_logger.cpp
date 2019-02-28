@@ -161,11 +161,12 @@ void PlatonLogger::logFormat(int level, const char* file, const char* func, int 
 	int tid = SysUtilsTool::getTid();
 
 	std::lock_guard<std::recursive_mutex> objLock(sLocker);
-	snprintf(sMessage, sizeof(sMessage), "[%02d:%02d:%02d.%03d] [%-5d] [%-5s] [%s:%d:%s]\t%s", \
+    char _sMessage[4096] = { 0 };
+	snprintf(_sMessage, sizeof(_sMessage), "[%02d:%02d:%02d.%03d] [%-5d] [%-5s] [%s:%d:%s]\t%s", \
 		tp->tm_hour, tp->tm_min, tp->tm_sec, (int)objTime.tv_usec / 1000, \
 		tid, PlatonLogger::getLevelTag(level), file, line, func, fmtMsg);
 
-	writeLoggerFile(sMessage);
+	writeLoggerFile(_sMessage);
 
 #if (defined(DEBUG) || defined(NDEBGU) || defined(_DEBUG))
 	printf("%s\n", fmtMsg);

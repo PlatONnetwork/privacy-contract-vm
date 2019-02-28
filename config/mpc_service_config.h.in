@@ -8,7 +8,7 @@ Default configuration for service.
 
 
 #define lib_mpc_vm_core_path        (const char*)"libemp-tool.so"
-#ifndef NDEBUG
+#ifdef DEBUG
 #define lib_protobuf_path           (const char*)"libprotobufd.so"
 #define lib_protobuf_lite_path      (const char*)"libprotobuf-lited.so"
 #else

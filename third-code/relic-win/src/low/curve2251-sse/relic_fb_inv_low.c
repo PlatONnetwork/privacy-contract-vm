@@ -42,8 +42,12 @@ void fb_invn_low(dig_t *c, const dig_t *a) {
 
 	chain = fb_poly_get_chain(&len);
 
-	int u[len + 1];
-	fb_t table[len + 1];
+	//int u[len + 1];
+	//fb_t table[len + 1];
+
+    int* u = (int*)malloc(len + 1);
+    fb_t* table = (fb_t*)malloc(len + 1);
+
 	for (i = 0; i <= len; i++) {
 		fb_null(table[i]);
 	}
@@ -96,4 +100,7 @@ void fb_invn_low(dig_t *c, const dig_t *a) {
 		fb_mul(table[i], table[i], table[y]);
 	}
 	fb_sqr(c, table[len]);
+
+    free(u);
+    free(table);
 }

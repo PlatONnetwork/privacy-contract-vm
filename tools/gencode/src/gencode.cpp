@@ -29,15 +29,15 @@ using namespace std;
 
 
 /// public function
-int gen_cs(const IR& ir);
-int gen_go(const IR& ir);
-int gen_cpp(const IR& ir);
-int gen_lua(const IR& ir);
-int gen_php(const IR& ir);
-int gen_java(const IR& ir);
-int gen_java_proxy(const IR& ir);
-int gen_python(const IR& ir);
-int gen_nodejs(const IR& ir);
+int gen_cs(IR& ir);
+int gen_go(IR& ir);
+int gen_cpp(IR& ir);
+int gen_lua(IR& ir);
+int gen_php(IR& ir);
+int gen_java(IR& ir);
+int gen_java_proxy(IR& ir);
+int gen_python(IR& ir);
+int gen_nodejs(IR& ir);
 ///
 
 
@@ -51,6 +51,7 @@ static string tpl_proxy_content = "# this, only for java\n# default directory/pa
 
 static string outputdir;
 static string digest;
+
 
 static map<string, string> mapJavaTypes = {
     {"%\"class.std::__cxx11::basic_string\"*","String"},
@@ -67,15 +68,6 @@ static set<string> java_basic_types = {
     "int","long","boolean","float","double","String"
 };
 
-static std::vector<std::string> split(const std::string &src, char delim) {
-    std::stringstream ss(src);
-    std::string item;
-    std::vector<std::string> elems;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(std::move(item));
-    }
-    return elems;
-}
 
 bool makedirs(const std::string& dirpath) {
     string path(dirpath);
@@ -104,8 +96,32 @@ bool makedirs(const std::string& dirpath) {
     return true;
 }
 
+struct pkginfo_st {
+    string filename = "";
+    string pkgname = "";
+    string outclass = "";
+    string pkgfullname = ""; // pkgname.outclass
+    set<string> classes; // [Foo, Bar, ...]
+};
+
 
 static string print_digest(const IR& ir) {
+    /*
+    **	IR NAME: IR1
+    **	IR HASH: 1291be25871314f67f4e779f1946ea3b
+    **
+    **	IR FUNC HASH(MD5)                 IR FUNC NAME  IR FUNC PROT
+    **	c34bb37739a6a758afb1c726ee9719c2  add           MPCInteger32 add(MPCInteger32,MPCInteger32)
+    **	3e7eacd3b10bfb32bd431f3647f0147f  sub           MPCInteger32 sub(MPCInteger32,MPCInteger32)
+    **
+    */
+    int width = strlen("IR FUNC NAME");
+    for (auto ir_func : ir.funcs) {
+        int len = ir_func.name.length();
+        if (len > width) width = len;
+    }
+    width += 2;
+
     stringstream sss;
     ostream::fmtflags oldflags = sss.flags();
     sss.setf(ios::left);
@@ -114,8 +130,7 @@ static string print_digest(const IR& ir) {
         << endl << " * IR HASH: " << ir.hash
         << endl << " * <p>" << endl;
     sss << " * "; sss.width(34); sss << "IR FUNC HASH(MD5)";
-    sss.width(16); sss << "IR FUNC NAME" << endl;
-    //sss << "IR FUNC PROT" << endl;
+    sss.width(width); sss << "IR FUNC NAME" << "IR FUNC PROT" << endl;
     for (auto ir_func : ir.funcs) {
         sss << " * "; sss.width(34);
 #if USE_FUNC_PROT_HASH
@@ -123,30 +138,29 @@ static string print_digest(const IR& ir) {
 #else
         sss << ir_func.hash_name;
 #endif
-        sss.width(16); sss << ir_func.name << endl;
-        //sss << ir_func.prot << endl;
+        sss.width(width); sss << ir_func.name << ir_func.prot << endl;
     }
-    /*
-    **	IR NAME: IR1
-    **	IR HASH: 1291be25871314f67f4e779f1946ea3b
-    **
-    **	IR FUNC HASH(MD5)                 IR FUNC NAME    IR FUNC PROT
-    **	c34bb37739a6a758afb1c726ee9719c2  add             MPCInteger32 add(MPCInteger32, MPCInteger32)
-    **	3e7eacd3b10bfb32bd431f3647f0147f  sub             MPCInteger32 sub(MPCInteger32, MPCInteger32)
-    **
-    */
     sss.flags(oldflags);
 
     return sss.str();
 }
 
+
+static bool have_protobuf = false;
+static vector<pkginfo_st> pkgs;
+
 int gen_all(IR &ir, string outdir/* = "./"*/)
 {
+    have_protobuf = false;
+    pkgs.clear();
+
     if (ir.funcs.size() <= 0) {
         cerr << "no function" << endl;
         return -1;
     }
-
+    for (auto jf : ir.java_files) {
+        cout << jf << endl;
+    }
 
     outputdir = outdir + string("/code/");
     if (!makedirs(outdir)) {
@@ -155,20 +169,31 @@ int gen_all(IR &ir, string outdir/* = "./"*/)
     }
 
     string ir_name = ir.name;
-    ir_name = regex_replace(ir_name, regex(".cpp.ll$"), string(""));
-    ir_name = regex_replace(ir_name, regex(".cpp.bc$"), string(""));
+    size_t pos = ir_name.find_last_of("/");
+    if (pos != std::string::npos) {
+        ir_name = ir_name.substr(pos+1, ir_name.length() - pos-1);
+    }
+    if (ir_name.length() == 0) {
+        ir_name = "NoNamed";
+    }
+    ir_name = regex_replace(ir_name, regex(".ll$"), string(""));
+    ir_name = regex_replace(ir_name, regex(".bc$"), string(""));
+    ir_name = regex_replace(ir_name, regex(".cpp$"), string(""));
     ir_name = regex_replace(ir_name, regex("[^a-zA-Z0-9_]"), string("_"));
 
     ir.name = "MPC" + ir_name;
     digest = print_digest(ir);
-    cout << "digest:\n" << digest << endl;
+#ifdef _DEBUG
+    cout << "debug digest:\n" << digest << endl;
+#endif
     if (gen_java(ir) != 0) {
         cerr << "gen java failed" << endl;
         return -1;
     }
+    cout << "digest:\n" << digest << endl;
 
     ir.name = "Proxy" + ir_name;
-    digest = print_digest(ir);
+    //digest = print_digest(ir);
     if (gen_java_proxy(ir) != 0) {
         cerr << "gen java proxy failed" << endl;
         return -1;
@@ -230,160 +255,95 @@ static int getTplProxyFile() {
     return 0;
 }
 
-static void getallfiles(const string& strpath, vector<string>* allFilePath, vector<string>* allFiles,
-    const string& strFileType, const char* filenamepattern, bool bRecursion)
-{
-    string strsearch;
-    size_t pos = string::npos;
 
-#if defined(_WIN32)
-    if (strpath[strpath.size() - 1] == '\\' || strpath[strpath.size() - 1] == '/')
-        strsearch = strpath + "*";
-    else strsearch = strpath + "/*";
+static int get_java_pkgname(const string& javafile, string& pkg, pkginfo_st& pkginfo) {
 
-    intptr_t handle;
-    struct _finddata_t fileinfo;
-    handle = _findfirst(strsearch.c_str(), &fileinfo);
-    if (handle == -1L)
-    {
-        return;
+    ifstream ifile(javafile);
+    if (!ifile.good()) {
+        cerr << "open javafile[" << javafile << "] failed!" << endl;
+        exit(1);
     }
-    string str;
-    do
-    {
-        if ((fileinfo.attrib & 0x10) == _A_SUBDIR)
-        {
-            if (!bRecursion) continue;
-            string str = fileinfo.name;
-            if (str == "." || str == "..") continue;
-            string nextpath = strpath + "/" + str;
-            getallfiles(nextpath, allFilePath, allFiles, strFileType, filenamepattern, bRecursion);
-        }
-        else if ((fileinfo.attrib & 0x00) == _A_NORMAL)
-        {
-            string str = fileinfo.name;
-            if (filenamepattern && !std::regex_search(str, std::regex(filenamepattern))) continue;
-            if ((pos = str.find_last_of('.')) == std::string::npos) continue;
-            if (str.substr(pos, str.length() - pos) != strFileType) continue;
-            if (allFiles) allFiles->push_back(str);
-            if (allFilePath) allFilePath->push_back(strpath + "/" + str);
-        }
-    } while (_findnext(handle, &fileinfo) == 0);
-    _findclose(handle);
-#else
-    if (strpath[strpath.size() - 1] == '\\' || strpath[strpath.size() - 1] == '/')
-        strsearch = strpath;
-    else strsearch = strpath + "/";
 
-    struct dirent *direntp;
-    DIR *dirp = opendir(strsearch.c_str());
-
-    if (dirp != NULL) {
-        while ((direntp = readdir(dirp)) != NULL) {
-
-            if (strcmp(direntp->d_name, ".") == 0
-                || strcmp(direntp->d_name, "..") == 0)
-                continue;
-
-            char fullpath[256] = { 0 };
-            struct stat statbuf;
-
-            strcpy(fullpath, strpath.c_str());
-            if (!strcmp(fullpath, "/"))
-            {
-                fullpath[0] = '\0';
-            }
-            strcat(fullpath, "/");
-            strcat(fullpath, direntp->d_name);
-
-            lstat(fullpath, &statbuf);
-            if (S_ISDIR(statbuf.st_mode)) {
-                if (!bRecursion) continue;
-                string str = direntp->d_name;
-                if (str == "." || str == "..") continue;
-                string nextpath = strpath + "/" + str;
-                getallfiles(nextpath, allFilePath, allFiles, strFileType, filenamepattern, bRecursion);
-            }
-            else if (S_ISREG(statbuf.st_mode)) {
-                string str = direntp->d_name;
-                if (filenamepattern && !std::regex_search(str, std::regex(filenamepattern))) continue;
-                if ((pos = str.find_last_of('.')) == std::string::npos) continue;
-                if (str.substr(pos, str.length() - pos) != strFileType) continue;
-                if (allFiles) allFiles->push_back(str);
-                if (allFilePath) allFilePath->push_back(strpath + "/" + str);
-
-            }
-        }
+    string s("");
+    while (!ifile.eof()) {
+        char buf[4097] = { 0 };
+        memset(buf, 0, 4096);
+        ifile.read(buf, 4096);
+        s += buf;
     }
-    closedir(dirp);
-#endif
-}
+    ifile.close();
 
-static int getjavafile(string& jf) {
-    vector<string> javafiles;
-    getallfiles("code/", &javafiles, nullptr, ".java", nullptr, true);
-    if (javafiles.size() != 1) {
-        if (javafiles.size() == 0) {
-            cerr << "please protoc --java_out=./code xxxx.proto" << endl;
+
+    match_results<std::string::iterator> results;
+    if (regex_search(s.begin(), s.end(), results, regex("package (.*);"))) {
+        if (results.size() != 2) {
+            std::cerr << "can not get java pkgname 1" << std::endl;
+            return -1;
         }
-        else {
-            cerr << "please rm -rf ./code/* && protoc --java_out=./code xxxx.proto" << endl;
+        pkg = results[1].str();
+        pkginfo.pkgname = results[1].str();
+    }
+    //else {
+    //    std::cerr << "can not get java pkgname 2" << std::endl;
+    //    return -1;
+    //}
+
+
+    if (regex_search(s.begin(), s.end(), results, regex("public final class (.*) \\{"))) {
+        if (results.size() != 2) {
+            std::cerr << "can not get java pkg outclass 1" << std::endl;
+            return -1;
         }
+        if (!pkg.empty()) pkg = pkg + ".";
+        pkg = pkg + results[1].str();
+        pkginfo.outclass = results[1].str();
+        if (!pkginfo.pkgname.empty()) pkginfo.pkgname = pkginfo.pkgname + ".";
+        pkginfo.pkgfullname = pkginfo.pkgname + pkginfo.outclass;
+    }
+    else {
+        std::cerr << "can not get java pkg outclass 2" << std::endl;
         return -1;
     }
-    jf = javafiles[0];
+
+    auto start = s.begin();
+    auto end = s.end();
+    while (regex_search(start, end, results, regex("static final class (.*) extends"))) {
+        if (results.size() != 2) {
+            std::cerr << "can not get java classes 1" << std::endl;
+            return -1;
+        }
+        if (results[1].str() != "Builder") {
+            pkginfo.classes.insert(results[1].str());
+        }
+        start = results[0].second;
+    }
+    if (pkginfo.classes.size() < 1) {
+        std::cerr << "can not get java classes 2" << std::endl;
+        return -1;
+    }
 
     return 0;
 }
 
-static int get_java_pkgname(string& pkg) {
-    static string javafile("");
+static int get_java_pkgname(const IR& ir, vector<pkginfo_st>& pkgs) {
+    int ret = -1;
 
-    if (javafile == "") {
-        if (0 != getjavafile(javafile)) {
-            cerr << "can not get java file" << endl;
-            return -1;
+    if (pkgs.size() > 0) {
+        return 0;
+    }
+
+    for (auto& javafile : ir.java_files) {
+        string pkg("");
+        pkginfo_st pkginfo;
+        ret = get_java_pkgname(javafile, pkg, pkginfo);
+        if (ret != 0) {
+            cerr << "get java package info failed" << endl;
+            exit(1);
         }
+        pkgs.push_back(pkginfo);
     }
 
-    ifstream ifile(javafile);
-    if (!ifile.good()) {
-        cerr << "open javafile failed!" << endl;
-        exit(1);
-    }
-
-    char buf[4097] = { 0 };
-    memset(buf, 0, 4096);
-    ifile.read(buf, 4096);
-    ifile.close();
-
-    string s(buf);
-
-    match_results<std::string::iterator> results;
-    if (regex_search(s.begin(), s.end(), results, regex("package (.*);"))) {
-        if (results.size() == 2) {
-            pkg = results[1].str();
-        }
-        else {
-            std::cerr << "can not get java pkg 1" << std::endl;
-            return -1;
-        }
-    }
-    else {
-        std::cerr << "can not get java pkg 2" << std::endl;
-        return -1;
-    }
-
-    if (regex_search(s.begin(), s.end(), results, regex("public final class (.*) \\{"))) {
-        if (results.size() == 2) {
-            pkg = pkg + "." + results[1].str();
-            return 0;
-        }
-        std::cerr << "can not get java pkg class 1" << std::endl;
-    }
-
-    std::cerr << "can not get java pkg class 2" << std::endl;
-    return -1;
+    return 0;
 }
 
 static void putResult(const string& filename, const string& content) {
@@ -420,8 +380,93 @@ static string getDefaultValue(const string& type) {
     else return "";
 }
 
+int get_types_pkgs(string arg_types[3], string s_java_pkg[3],
+    string s_java_pkg_[3],
+    const IR &ir, const IR::func &func) {
 
-int gen_java(const IR& ir) {
+
+    if (func.argtypes.size() < 2) {
+        cerr << "error func.argtypes.size(): " << func.argtypes.size() << endl;
+        return -1;
+    }
+
+    // 0,rett; 1,arg2; 2,arg2
+    vector<string> types = { func.rett, func.argtypes[0], func.argtypes[1] };
+    //vector<string> types = { "%\"class.Foo\"*", "%class.XX::Foo*" , "%\"class.XX::Foo\"*" };
+
+    for (int i = 0; i < 3; i++) {
+        string argtype = types[i];
+        //std::cout << "argt type:" << argtype << std::endl;
+        bool proto_type = false;
+        if (mapJavaTypes.find(argtype) != mapJavaTypes.end()) { // basic type
+            argtype = mapJavaTypes[argtype];
+        }
+        else {
+            if ((argtype.find("%\"class.") == 0) || (argtype.find("%class.") == 0)) { // protobuffer message type
+                int dif = 3; // for substr
+                if (argtype.find("%class.") == 0) dif = 2;
+
+                if (!have_protobuf) {
+                    if (0 != get_java_pkgname(ir, pkgs)) {
+                        return -1;
+                    }
+                    ///for (auto _pkg : pkgs) {
+                    ///    for (auto _cls : _pkg.classes) {
+                    ///        cout << "cls:" << _cls << endl;
+                    ///    }
+                    ///}
+                    have_protobuf = true;
+                }
+                size_t pos = argtype.find_last_of("::");
+                if (pos == string::npos) {
+                    pos = argtype.find_last_of(".");
+                }
+                if (pos != string::npos) {
+                    //string s_proto_full_type = argtype.substr(7, argtype.length() - 8); // "class.XXXXX"
+                    //string s_proto_prfx_type = argtype.substr(7, pos - 8);
+
+                    argtype = argtype.substr(pos + 1, argtype.length() - pos - dif);
+                    proto_type = true;
+                    {
+                        bool got = false;
+                        for (auto pkginfo : pkgs) {
+                            for (auto cls : pkginfo.classes) {
+                                if (cls == argtype) {
+                                    got = true;
+                                    s_java_pkg[i] = pkginfo.pkgfullname;
+                                    s_java_pkg_[i] = regex_replace(s_java_pkg[i], regex("\\."), string("_"));
+                                    break;
+                                }
+                            }
+                            if (got)
+                                break;
+                        }
+                        if (!got) {
+                            cerr << "can not got arg: " << argtype << endl;
+                            return -1;
+                        }
+                    }
+                }
+                else {
+                    std::cerr << "cannot get type1: " << argtype << std::endl;
+                    return -1;
+                }
+            }
+            else {
+                std::cerr << "cannot get type2: " << argtype << std::endl;
+                return -1;
+            }
+        }
+        (void)proto_type;
+        //std::cout << "java type:" << argtype << std::endl;
+
+        arg_types[i] = argtype;
+    }
+
+    return 0;
+}
+
+int gen_java(IR& ir) {
     string java_outputdir = outputdir + "java/";
     makedirs(java_outputdir);
     if (0 != getTplFile()) { return -1; }
@@ -440,16 +485,14 @@ int gen_java(const IR& ir) {
     string s_extendsfs("");
     string temp, tmp1, tmp2;
 
-    string s_java_pkg_name;
-    string s_java_pkg_name_;
-    bool have_protobuf = false;
 
-    for (auto func : ir.funcs) {
+    for (auto& func : ir.funcs) {
 #if USE_FUNC_PROT_HASH
         string func_hash = func.hash_prot;
 #else // USE_FUNC_NAME_HASH
         string func_hash = func.hash_name;
 #endif
+
         temp = gp_ir_func_interface;
         temp = regex_replace(temp, rfunchash, func_hash);
         temp = regex_replace(temp, rfuncposx, string("01"));
@@ -466,77 +509,11 @@ int gen_java(const IR& ir) {
         tmp2 = regex_replace(tmp2, rfunchash, func_hash);
         tmp2 = regex_replace(tmp2, rfuncposx, string("02"));
 
-
-        string arg_types[3];
-        {
-            if (func.argtypes.size() < 2) {
-                cerr << "error func.argtypes.size(): " << func.argtypes.size() << endl;
-                return -1;
-            }
-            arg_types[0] = "()";
-
-            for (int i = 0; i < 2; i++) {
-                string argtype = func.argtypes[i];
-                //std::cout << " argtype:" << argtype << std::endl;
-                bool proto_type = false;
-                if (mapJavaTypes.find(argtype) != mapJavaTypes.end()) { // basic type
-                    argtype = mapJavaTypes[argtype];
-                }
-                else {
-                    if (argtype.find("%\"class.") == 0) { // protobuffer message type
-                        if (!have_protobuf) {
-                            if (0 != get_java_pkgname(s_java_pkg_name)) { return -1; }
-                            s_java_pkg_name_ = regex_replace(s_java_pkg_name, regex("\\."), string("_"));
-                            have_protobuf = true;
-                        }
-                        size_t pos = argtype.find_last_of("::");
-                        if (pos == string::npos) {
-                            pos = argtype.find_last_of(".");
-                        }
-                        if (pos != string::npos) {
-                            argtype = argtype.substr(pos + 1, argtype.length() - pos - 3);
-                            proto_type = true;
-                        }
-                        else {
-                            std::cerr << "cannot get type" << std::endl;
-                            return -1;
-                        }
-                    }
-                    else {
-                        std::cerr << "cannot get type" << std::endl;
-                        return -1;
-                    }
-                }
-                (void)proto_type;
-                //std::cout << "java type:" << argtype << std::endl;
-
-                arg_types[i + 1] = argtype;
-            }
-        }
-        if (false) {
-            string prot = func.prot;
-            match_results<std::string::iterator> results;
-            if (regex_search(prot.begin(), prot.end(), results, regex("\\((.*)\\)"))) {
-                if (results.size() != 2) {
-                    cerr << "error results.size(): " << results.size() << endl;
-                    return -1;
-                }
-                arg_types[0] = results[0].str();
-
-                string tmptypes = results[1].str();
-                tmptypes = regex_replace(tmptypes, regex("[^a-zA-Z0-9,]"), string(""));
-                auto types = split(tmptypes, ',');
-                if (types.size() < 2) {
-                    cerr << "error types.size(): " << types.size() << " types: " << tmptypes << endl;
-                    return -1;
-                }
-                arg_types[1] = types[0];
-                arg_types[2] = types[1];
-            }
-            else {
-                cerr << "error prot: " << prot << endl;
-                return -1;
-            }
+        string s_java_pkg[3];  // 0,rett; 1,arg2; 2,arg2
+        string s_java_pkg_[3]; // 0,rett; 1,arg2; 2,arg2
+        string arg_types[3];   // 0,rett; 1,arg2; 2,arg2
+        if (0 != get_types_pkgs(arg_types, s_java_pkg, s_java_pkg_, ir, func)) {
+            return -1;
         }
 
         ///
@@ -551,9 +528,9 @@ int gen_java(const IR& ir) {
         data_type1 = getDataType(ret_type1);
         if (java_basic_types.find(ret_type1) == java_basic_types.end()) { // pb type
             proto_type = true;
-            data_type1 = s_java_pkg_name + "." + ret_type1 + ".newBuilder().build().toByteArray()";
-            def_value1 = s_java_pkg_name + "." + ret_type1 + ".newBuilder()";
-            ret_type1 = s_java_pkg_name + "." + ret_type1 + ".Builder";
+            data_type1 = s_java_pkg[1] + "." + ret_type1 + ".newBuilder().build().toByteArray()";
+            def_value1 = s_java_pkg[1] + "." + ret_type1 + ".newBuilder()";
+            ret_type1 = s_java_pkg[1] + "." + ret_type1 + ".Builder";
 
             tmp2 = regex_replace(tmp2, regex("X_DEFAULT_INPUT"), string("RETVALUEFUNC"));
             temp = regex_replace(temp, regex("RETTYPE_DATADEFAULTVALUE"), string("RETTYPE builder = DATADEFAULTVALUE"));
@@ -580,9 +557,9 @@ int gen_java(const IR& ir) {
         data_type2 = getDataType(ret_type2);
         if (java_basic_types.find(ret_type2) == java_basic_types.end()) { // pb type
             proto_type = true;
-            data_type2 = s_java_pkg_name + "." + ret_type2 + ".newBuilder().build().toByteArray()";
-            def_value2 = s_java_pkg_name + "." + ret_type2 + ".newBuilder()";
-            ret_type2 = s_java_pkg_name + "." + ret_type2 + ".Builder";
+            data_type2 = s_java_pkg[2] + "." + ret_type2 + ".newBuilder().build().toByteArray()";
+            def_value2 = s_java_pkg[2] + "." + ret_type2 + ".newBuilder()";
+            ret_type2 = s_java_pkg[2] + "." + ret_type2 + ".Builder";
 
             tmp1 = regex_replace(tmp1, regex("X_DEFAULT_INPUT"), string("RETVALUEFUNC"));
             temp = regex_replace(temp, regex("RETTYPE_DATADEFAULTVALUE"), string("RETTYPE builder = DATADEFAULTVALUE"));
@@ -613,9 +590,6 @@ int gen_java(const IR& ir) {
         s_abstractf += tmp2;
         ///
 
-        //temp = func.prot;
-        //temp = regex_replace(temp, regex("[\\(,]"), "_");
-        //temp = regex_replace(temp, regex("[\\) ]"), "");
         temp = func.name + "_" + arg_types[1] + "_" + arg_types[2];
         s_extendsfs = regex_replace(s_extendsfs, regex("IRFUNCPROTA"), temp);
         s_abstractf = regex_replace(s_abstractf, regex("IRFUNCPROTA"), temp);
@@ -623,7 +597,11 @@ int gen_java(const IR& ir) {
 
         temp = func.name + "(" + arg_types[1] + "," + arg_types[2] + ")";
         s_extendsfs = regex_replace(s_extendsfs, regex("IRFUNCPROT"), temp);
-    }
+
+        func.prot = temp;
+}
+    digest = print_digest(ir);
+
     s_instances = regex_replace(s_instances, regex("\n\n"), string("\n"));
 
     content_res = regex_replace(content_res, regex("CONTENT_FUNC_ABSTRACT"), s_abstractf);
@@ -632,18 +610,18 @@ int gen_java(const IR& ir) {
     content_res = regex_replace(content_res, rfuncintf, s_instances);
     content_res = regex_replace(content_res, regex("IRHASH"), ir.hash);
     content_res = regex_replace(content_res, regex("IRNAME"), ir.name);
-    content_res = regex_replace(content_res, regex("IRDIGEST"), digest);
+    content_res = regex_replace(content_res, regex("IRDIGEST"), digest);// digest);
 
     putResult(java_outputdir + ir.name + ".java", content_res);
 
-    gp_readme = regex_replace(gp_readme, regex("IRDIGEST"), digest);
+    gp_readme = regex_replace(gp_readme, regex("IRDIGEST"), digest);// digest);
     gp_readme = regex_replace(gp_readme, regex("IRNAME"), ir.name);
     putResult(java_outputdir + ir.name + "-README.TXT", gp_readme);
 
     return 0;
 }
 
-int gen_java_proxy(const IR& ir) {
+int gen_java_proxy(IR& ir) {
     string java_outputdir = outputdir + "java/";
     makedirs(java_outputdir);
     if (0 != getTplProxyFile()) { return -1; }
@@ -665,9 +643,6 @@ int gen_java_proxy(const IR& ir) {
     string s_proxy_proto_returns("");
     string temp, tmp1, tmp2;
 
-    string s_java_pkg_name;
-    string s_java_pkg_name_;
-    bool have_protobuf = false;
 
     for (auto func : ir.funcs) {
 #if USE_FUNC_PROT_HASH
@@ -676,114 +651,30 @@ int gen_java_proxy(const IR& ir) {
         string func_hash = func.hash_name;
 #endif
 
-        string arg_types[3];
-        {
-            if (func.argtypes.size() < 2) {
-                cerr << "error func.argtypes.size(): " << func.argtypes.size() << endl;
-                return -1;
-            }
-            arg_types[0] = "()";
-
-            for (int i = 0; i < 2; i++) {
-                string argtype = func.argtypes[i];
-                //std::cout << " argtype:" << argtype << std::endl;
-                //bool proto_type = false;
-                if (mapJavaTypes.find(argtype) != mapJavaTypes.end()) { // basic type
-                    argtype = mapJavaTypes[argtype];
-                }
-                else {
-                    if (argtype.find("%\"class.") == 0) { // protobuffer message type
-                        if (!have_protobuf) {
-                            if (0 != get_java_pkgname(s_java_pkg_name)) { return -1; }
-                            s_java_pkg_name_ = regex_replace(s_java_pkg_name, regex("\\."), string("_"));
-                            have_protobuf = true;
-                        }
-                        size_t pos = argtype.find_last_of("::");
-                        if (pos == string::npos) {
-                            pos = argtype.find_last_of(".");
-                        }
-                        if (pos != string::npos) {
-                            argtype = argtype.substr(pos + 1, argtype.length() - pos - 3);
-                            //proto_type = true;
-                        }
-                        else {
-                            std::cerr << "cannot get type" << std::endl;
-                            return -1;
-                        }
-                    }
-                    else {
-                        std::cerr << "cannot get type" << std::endl;
-                        return -1;
-                    }
-                }
-                //std::cout << "java type:" << argtype << std::endl;
-
-                arg_types[i + 1] = argtype;
-            }
+        string s_java_pkg[3];  // 0,rett; 1,arg2; 2,arg2
+        string s_java_pkg_[3]; // 0,rett; 1,arg2; 2,arg2
+        string arg_types[3];   // 0,rett; 1,arg2; 2,arg2
+        if (0 !=
+            get_types_pkgs(arg_types, s_java_pkg, s_java_pkg_, ir, func)) {
+            return -1;
         }
 
-        string s_proto_full_type;
-        string s_proto_prfx_type;
-
-        //std::cout << " type:" << func.rett << std::endl;
-        bool proto_type = false;
-        string rett = func.rett;
-        if (mapJavaTypes.find(rett) != mapJavaTypes.end()) { // basic type
-            rett = mapJavaTypes[rett];
-        }
-        else {
-            if (rett.find("%\"class.") == 0) { // protobuffer message type
-                if (!have_protobuf) {
-                    if (0 != get_java_pkgname(s_java_pkg_name)) { return -1; }
-                    s_java_pkg_name_ = regex_replace(s_java_pkg_name, regex("\\."), string("_"));
-                    have_protobuf = true;
-                }
-                size_t pos = rett.find_last_of("::");
-                if (pos == string::npos) {
-                    pos = rett.find_last_of(".");
-                }
-                if (pos != string::npos) {
-                    s_proto_full_type = rett.substr(7, rett.length() - 8);// "class.XXXXX"
-                    s_proto_prfx_type = rett.substr(7, pos - 8);
-
-                    rett = rett.substr(pos + 1, rett.length() - pos - 3);
-                    proto_type = true;
-
-                }
-                else {
-                    std::cerr << "cannot get type" << std::endl;
-                    return -1;
-                }
-            }
-            else {
-                std::cerr << "cannot get type" << std::endl;
-                return -1;
-            }
-        }
-        //std::cout << "java type:" << rett << std::endl;
-
+        string rett = arg_types[0];
         if (java_basic_types.find(rett) == java_basic_types.end()) {
             static set<string> pprs;
-            string stmp = s_java_pkg_name + rett;
+            string stmp = s_java_pkg[0] + rett;
             if (pprs.find(stmp) == pprs.end()) {
                 pprs.insert(stmp);
                 string tmp_returns = gp_proxy_proto_return_func;
                 tmp_returns = regex_replace(tmp_returns, regex("RETTYPE"), rett);
-                tmp_returns = regex_replace(tmp_returns, regex("RETPKG"), s_java_pkg_name);
+                tmp_returns = regex_replace(tmp_returns, regex("RETPKG"), s_java_pkg[0]);
                 s_proxy_proto_returns += tmp_returns;
             }
         }
 
-        //temp = func.prot;
-        //temp = regex_replace(temp, regex("[\\(,]"), "_");
-        //temp = regex_replace(temp, regex("[\\) ]"), "");
         temp = func.name + "_" + arg_types[1] + "_" + arg_types[2];
 
         string func_rett = rett;
-        if (proto_type) {
-            (void)proto_type;
-            //func_rett = s_java_pkg_name_ + rett;
-        }
         string tmpmethod = rett + "_" + temp;
         string tmpmethodmap = gp_method_map;
         tmpmethodmap = regex_replace(tmpmethodmap, regex("IR_FUNC_PROT"), tmpmethod);
@@ -794,8 +685,7 @@ int gen_java_proxy(const IR& ir) {
         tmpmethodmap = regex_replace(tmpmethodmap, regex("IRFUNCHASH"), func_hash);
         s_methodmaps += tmpmethodmap;
         s_methods += "        " + tmpmethod + ",\n";
-
-    }
+}
 
     content_res = regex_replace(content_res, regex("IRHASH"), ir.hash);
     content_res = regex_replace(content_res, regex("IRDIGEST"), digest);
@@ -820,11 +710,10 @@ int gen_java_proxy(const IR& ir) {
 
 }
 
-int gen_cs(const IR& ir) { return 0; }
-int gen_go(const IR& ir) { return 0; }
-int gen_cpp(const IR& ir) { return 0; }
-int gen_lua(const IR& ir) { return 0; }
-int gen_php(const IR& ir) { return 0; }
-int gen_python(const IR& ir) { return 0; }
-int gen_nodejs(const IR& ir) { return 0; }
-
+int gen_cs(IR& ir) { return 0; }
+int gen_go(IR& ir) { return 0; }
+int gen_cpp(IR& ir) { return 0; }
+int gen_lua(IR& ir) { return 0; }
+int gen_php(IR& ir) { return 0; }
+int gen_python(IR& ir) { return 0; }
+int gen_nodejs(IR& ir) { return 0; }

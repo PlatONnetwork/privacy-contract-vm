@@ -81,6 +81,9 @@ link_directories(${CMAKE_BINARY_DIR}/lib ${ICE_ROOT}/lib)
 
 IF(WIN32)
     link_libraries(Ws2_32)
+
+	link_directories(${THIRD_CODE_DIR}/jit/lib/win/${PLATDIR})
+	link_libraries(mpc-jit)
 ENDIF()
 
 #link_libraries(mpc_vm_service)
@@ -108,6 +111,7 @@ LinkIce(${NAME})
 
 SET_TARGET_PROPERTIES(${NAME} PROPERTIES 
 	FOLDER "mpc_vm"
+	VERSION ${SO_VERSION}
 )
 
 # static
@@ -123,6 +127,7 @@ ELSE()
 SET_TARGET_PROPERTIES(${NAME}_static PROPERTIES
     OUTPUT_NAME ${NAME}
     FOLDER "mpc_vm"
+	VERSION ${SO_VERSION}
     )
 ENDIF()
 
