@@ -12,13 +12,13 @@
 	url = https://github.com/relic-toolkit/relic.git
 [submodule "third-code/protobuf"]
 	path = third-code/protobuf
-	url = http://192.168.9.66/PlatON/protobuf.git
+	url = https://github.com/PlatONnetwork/protobuf.git
 [submodule "third-code/emp-tool"]
 	path = third-code/emp-tool
-	url = http://192.168.9.66/PlatON/emp-tool.git
+	url = https://github.com/kelvinskk/emp-tool.git
 [submodule "third-code/emp-ot"]
 	path = third-code/emp-ot
-	url = http://192.168.9.66/PlatON/emp-ot.git
+	url = https://github.com/kelvinskk/emp-ot.git
 [submodule "third-code/emp-sh2pc"]
 	path = third-code/emp-sh2pc
-	url = http://192.168.9.66/PlatON/emp-sh2pc.git
+	url = https://github.com/kelvinskk/emp-sh2pc.git
