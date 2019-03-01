@@ -15,10 +15,10 @@
 	url = https://github.com/PlatONnetwork/protobuf.git
 [submodule "third-code/emp-tool"]
 	path = third-code/emp-tool
-	url = https://github.com/kelvinskk/emp-tool.git
+	url = https://github.com/PlatONnetwork/emp-tool.git
 [submodule "third-code/emp-ot"]
 	path = third-code/emp-ot
-	url = https://github.com/kelvinskk/emp-ot.git
+	url = https://github.com/PlatONnetwork/emp-ot.git
 [submodule "third-code/emp-sh2pc"]
 	path = third-code/emp-sh2pc
-	url = https://github.com/kelvinskk/emp-sh2pc.git
+	url = https://github.com/PlatONnetwork/emp-sh2pc.git

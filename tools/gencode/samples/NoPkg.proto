@@ -1,8 +1,0 @@
-
-syntax = "proto3";
-
-message Foo {
-    int32       i32 = 1;
-    float       f   = 2;
-    string      s   = 3;
-}

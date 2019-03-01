@@ -239,13 +239,6 @@ add_subdirectory(src/mpc-vm-service)
 add_subdirectory(src/mpc-vm-platon-sdk)
 
 
-# 
-# tools
-# 
-IF(NOT MAKE_PACKAGE)
-    add_subdirectory(tools/gencode)
-ENDIF()
-
 
 # 
 # test projects
